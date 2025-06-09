@@ -13,16 +13,18 @@ const verifyToken = async (req, res, next) => {
       data: { user },
       error,
     } = await supabase.auth.getUser(token);
-
     if (error || !user) {
       return res.status(401).json({ error: "Invalid token" });
     }
 
     const teacher = await getTeacherByEmail(user.email);
-
     req.user = user;
     req.teacher = teacher
-      ? { id: teacher.id, name: teacher.name, email: teacher.email }
+      ? {
+          id: teacher.data?.id,
+          name: teacher.data?.name,
+          email: teacher.data?.email,
+        }
       : null;
 
     next();

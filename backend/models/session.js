@@ -1,5 +1,5 @@
 import { supabase } from "../config/db.js";
-export const createSession = async ({ title, subject, date, teacherId }) => {
+export const createSession = async ({ title, subject, teacherId }) => {
   const { data, error } = await supabase
     .from("sessions")
     .insert([{ title, subject, teacher_id: teacherId }])

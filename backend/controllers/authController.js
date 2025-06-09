@@ -6,11 +6,17 @@ const register = async (req, res) => {
     const { name, email, password } = req.body;
     // Check if email already in use
     const { data, error } = await getTeacherByEmail(email);
+    if (!name || !email || !password) {
+      return res
+        .status(400)
+        .json({ error: "Name, email, and password are required" });
+    }
     if (data) {
       return res
         .status(400)
         .json({ field: "email", message: "Email already in use" });
     }
+
     // Supabase auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
