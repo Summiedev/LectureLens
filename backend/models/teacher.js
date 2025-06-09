@@ -1,22 +1,39 @@
-const mongoose = require('mongoose');
+import { supabase } from "../config/db.js";
 
-const teacherSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-    trim: true
-  },
-  password: {
-    type: String,
-    required: true
-  }
-}, { timestamps: true });
+export const createTeacher = async ({ name, email, password }) => {
+  const { data, error } = await supabase
+    .from("teachers")
+    .insert([{ name, email, password }]);
+  return { data, error };
+};
 
-module.exports = mongoose.model('Teacher', teacherSchema);
+export const getTeacherById = async (id) => {
+  const { data, error } = await supabase
+    .from("teachers")
+    .select("*")
+    .eq("id", id)
+    .single();
+  return { data, error };
+};
+
+export const getTeacherByEmail = async (email) => {
+  const { data, error } = await supabase
+    .from("teachers")
+    .select("*")
+    .eq("email", email)
+    .single();
+  return { data, error };
+};
+
+export const updateTeacher = async (id, { name, email, password }) => {
+  const { data, error } = await supabase
+    .from("teachers")
+    .update({ name, email, password })
+    .eq("id", id);
+  return { data, error };
+};
+
+export const deleteTeacher = async (id) => {
+  const { data, error } = await supabase.from("teachers").delete().eq("id", id);
+  return { data, error };
+};
