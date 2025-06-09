@@ -1,68 +1,82 @@
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
 import { createTeacher, getTeacherByEmail } from "../models/teacher.js";
-
-const generateToken = (id) =>
-  jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+import { supabase } from "../config/db.js";
 
 const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-
     // Check if email already in use
-    const existing = await getTeacherByEmail(email);
-    if (existing) {
+    const { data, error } = await getTeacherByEmail(email);
+    if (data) {
       return res
         .status(400)
         .json({ field: "email", message: "Email already in use" });
     }
-
-    // Hash password
-    const hashed = await bcrypt.hash(password, 10);
-
-    // Create teacher
-    const teacher = await createTeacher({
-      name,
+    // Supabase auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
-      password: hashed,
+      password,
+      options: {
+        data: {
+          name,
+        },
+      },
     });
 
-    // Generate token
-    const token = generateToken(teacher.id);
+    if (authError) {
+      return res.status(400).json({
+        field: authError.message.includes("email") ? "email" : "general",
+        message: authError.message,
+      });
+    }
+
+    // Create teacher
+    const { data: teacher, error: createError } = await createTeacher({
+      name,
+      email,
+      supabase_user_id: authData.user?.id,
+    });
+
+    if (createError) {
+      console.error("Error creating teacher:", createError);
+      return res.status(500).json({ error: "Failed to create teacher" });
+    }
 
     res.status(201).json({
-      token,
-      teacher: { id: teacher.id, name: teacher.name, email: teacher.email },
+      token: authData.session.access_token,
+      teacher: {
+        id: teacher?.id,
+        name: teacher?.name,
+        email: teacher?.email,
+        supabase_user_id: authData.user?.id,
+      },
     });
   } catch (err) {
     console.error("Registration error:", err);
-    if (err.code === 11000 && err.keyPattern.email) {
-      return res.status(400).json({
-        field: "email",
-        message: "Email already in use. Please use another.",
-      });
-    }
     res.status(500).json({ error: "Registration failed. Please try again." });
   }
 };
-
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // Get teacher data from your database
     const teacher = await getTeacherByEmail(email);
-    if (!teacher) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
 
-    const match = await bcrypt.compare(password, teacher.password);
-    if (!match) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
-
-    const token = generateToken(teacher.id);
     res.json({
-      token,
-      teacher: { id: teacher.id, name: teacher.name, email: teacher.email },
+      user: data.user,
+      session: data.session,
+      teacher: teacher
+        ? { id: teacher.id, name: teacher.name, email: teacher.email }
+        : null,
     });
   } catch (err) {
     console.error("❌ Login error:", err);
@@ -70,4 +84,19 @@ const login = async (req, res) => {
   }
 };
 
-export { login, register };
+const logout = async (req, res) => {
+  try {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.json({ message: "Logged out successfully" });
+  } catch (err) {
+    console.error("Logout error:", err);
+    res.status(500).json({ error: "Logout failed" });
+  }
+};
+
+export { login, register, logout };

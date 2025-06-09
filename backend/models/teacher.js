@@ -1,9 +1,11 @@
 import { supabase } from "../config/db.js";
 
-export const createTeacher = async ({ name, email, password }) => {
+export const createTeacher = async ({ name, email, supabase_user_id }) => {
   const { data, error } = await supabase
     .from("teachers")
-    .insert([{ name, email, password }]);
+    .insert([{ name, email, supabase_user_id }])
+    .select()
+    .single();
   return { data, error };
 };
 

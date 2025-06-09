@@ -1,30 +1,35 @@
-import jwt from "jsonwebtoken";
-import * as User from "../models/teacher.js";
+import { supabase } from "../config/db.js";
+import { getTeacherByEmail } from "../models/teacher.js";
 
-const authenticateUser = async (req, res, next) => {
+const verifyToken = async (req, res, next) => {
   try {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
-    if (!token)
-      return res
-        .status(401)
-        .json({ error: "Access denied. No token provided." });
+    const token = req.headers.authorization?.replace("Bearer ", "");
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.getTeacherById(decoded.id);
-    if (!user.data) return res.status(401).json({ error: "Invalid token." });
+    if (!token) {
+      return res.status(401).json({ error: "No token provided" });
+    }
 
-    req.user = user.data;
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+
+    const teacher = await getTeacherByEmail(user.email);
+
+    req.user = user;
+    req.teacher = teacher
+      ? { id: teacher.id, name: teacher.name, email: teacher.email }
+      : null;
+
     next();
-  } catch (error) {
-    if (error.name === "JsonWebTokenError") {
-      return res.status(400).json({ error: "Invalid token." });
-    }
-    if (error.name === "TokenExpiredError") {
-      return res.status(401).json({ error: "Token expired." });
-    }
-    console.error("Authentication error:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+  } catch (err) {
+    console.error("Token verification error:", err);
+    res.status(401).json({ error: "Token verification failed" });
   }
 };
 
-export default authenticateUser;
+export default verifyToken;
