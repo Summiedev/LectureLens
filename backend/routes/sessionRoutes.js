@@ -1,5 +1,5 @@
 import express from "express";
-import verifyToken from "../middleware/authMiddleware.js";
+import verifyToken from "../middleware/authmiddleware.js";
 import {
   createSession,
   uploadSlides,
@@ -10,13 +10,23 @@ import {
   getQuiz,
   submitQuiz,
   deleteSession,
+  listSessions,
+  getSlides,
+  getSlideQuestions,
+  getParticipants,
+  getParticipantReport,
+  leaveSession,
+  getDashboardSummary,
+  updateCurrentSlide,
+  exportSessionData,
+
 } from "../controllers/sessionController.js";
 const router = express.Router();
 
 // Teacher-only
 router.post("/", verifyToken, createSession);
-router.post("/:sessionId/slides", verifyToken, uploadSlides);
-router.post("/:sessionId/slides/:slideId/questions", verifyToken, addQuestions);
+router.post("/slides/:sessionId", verifyToken, uploadSlides);
+router.patch("/:sessionId/slides/:slideId/questions", verifyToken, addQuestions);
 router.get("/:sessionId/analytics", verifyToken, getAnalytics);
 router.delete("/:id", verifyToken, deleteSession);
 // Public (students)
@@ -25,4 +35,19 @@ router.post("/:sessionId/attention", logAttention);
 router.get("/:sessionId/quiz", getQuiz);
 router.post("/:sessionId/quiz", submitQuiz);
 
+
+router.get("/",verifyToken, listSessions);
+router.get("/:sessionId/slides",verifyToken, getSlides);
+
+router.get("/slides/:slideId/questions", verifyToken,getSlideQuestions);
+
+router.get("/:sessionId/participants",verifyToken, getParticipants);
+router.get("/:sessionId/participants/:uuid/report",verifyToken, getParticipantReport);
+
+router.post("/:sessionId/leave",verifyToken, leaveSession);
+router.get("/dashboard",verifyToken, getDashboardSummary);
+
+
+router.post("/:sessionId/current-slide",verifyToken, updateCurrentSlide);
+router.get("/:sessionId/export",verifyToken, exportSessionData);
 export default router;

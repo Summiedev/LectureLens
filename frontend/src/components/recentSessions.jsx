@@ -1,0 +1,86 @@
+import { Trash2 } from 'lucide-react';
+
+const sessions = [
+  {
+    title: 'Renal Physiology',
+    date: 'June 8th, 2025 | 02:35 PM',
+    attention: 72.8,
+    attentionColor: 'red',
+    image: '/renal.png',
+    avatars: 4,
+  },
+  {
+    title: 'Histology of the Gallbladder',
+    date: 'June 12th, 2025 | 11:00 AM',
+    attention: 72.8,
+    attentionColor: 'green',
+    image: '/gallbladder.png',
+    avatars: 5,
+  },
+  {
+    title: 'Community Health',
+    date: 'June 12th, 2025 | 11:00 AM',
+    attention: 80,
+    attentionColor: 'green',
+    image: '/community.png',
+    avatars: 5,
+  },
+];
+
+export default function RecentSessions() {
+  return (
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Recent Sessions</h2>
+        <button className="text-sm text-gray-500 flex items-center gap-1 hover:text-black">
+          Clear history <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="flex gap-4 overflow-x-auto">
+        {sessions.map((session, idx) => (
+          <div
+            key={idx}
+            className={`w-72 rounded-xl border ${
+              session.attentionColor === 'green' ? 'border-green-500' : 'border-red-500'
+            } overflow-hidden bg-white shadow-sm`}
+          >
+            <div className="relative h-40">
+              <img src={session.image} alt={session.title} className="w-full h-full object-cover" />
+              <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent" />
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-base">{session.title}</h3>
+              <p className="text-sm text-gray-500 mb-3">{session.date}</p>
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`w-3 h-3 rounded-full ${
+                      session.attentionColor === 'green' ? 'bg-green-600' : 'bg-red-600'
+                    }`}
+                  />
+                  <span className={`font-semibold ${
+                      session.attentionColor === 'green' ? 'text-green-700' : 'text-red-700'
+                    }`}>{session.attention}%</span>
+                </div>
+                <div className="flex -space-x-2">
+                  {[...Array(session.avatars)].map((_, i) => (
+                    <img
+                      key={i}
+                      className="w-6 h-6 rounded-full border-2 border-white"
+                      src={`https://randomuser.me/api/portraits/men/${i + 1}.jpg`}
+                      alt=""
+                    />
+                  ))}
+                  <div className="w-6 h-6 rounded-full bg-gray-700 text-white text-xs flex items-center justify-center border-2 border-white">
+                    +20
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

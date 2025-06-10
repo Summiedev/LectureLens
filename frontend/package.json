@@ -11,20 +11,20 @@
   },
   "dependencies": {
     "@mediapipe/face_mesh": "^0.4.1633559619",
-    "@tailwindcss/vite": "^4.1.8",
     "@tensorflow-models/blazeface": "^0.1.0",
     "@tensorflow-models/face-landmarks-detection": "^1.0.6",
     "@tensorflow/tfjs-backend-webgl": "^4.22.0",
     "@tensorflow/tfjs-core": "^4.22.0",
     "axios": "^1.9.0",
+    "lucide-react": "^0.513.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.2",
-    "socket.io-client": "^4.8.1",
-    "tailwindcss": "^4.1.8"
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
+    "@tailwindcss/vite": "^4.1.8",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",
@@ -32,6 +32,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "tailwindcss": "^4.1.8",
     "vite": "^6.3.5"
   }
 }

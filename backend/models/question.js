@@ -12,7 +12,7 @@ export const createQuestion = async ({
       {
         slide_id: slideId,
         question_text: questionText,
-        answers: JSON.parse(answers),
+        answers: answers,
         correct_answer: correct_answer,
       },
     ])
