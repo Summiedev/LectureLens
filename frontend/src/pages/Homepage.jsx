@@ -4,8 +4,8 @@ import { BadgeCheck } from "lucide-react";
 const HomePage = () => {
   return (
     <div className="bg-neutral-10 bg-[url('/src/assets/background.png')] bg-cover bg-center bg-no-repeat min-h-screen">
-      <Navbar />
-      <div className="w-full flex flex-col justify-center md:justify-start items-center md:items-start px-4 md:px-20 pt-10 md:pt-20 relative">
+      <Navbar login={true} />
+      <div className="w-full flex flex-col justify-center md:justify-start items-center md:items-start px-4 md:px-9 pt-10 md:pt-20 relative">
         <HomePageContents />
       </div>
     </div>
@@ -15,7 +15,7 @@ const HomePage = () => {
 const HomePageContents = () => {
   return (
     <div className="w-full  min-w-[100%] flex flex-col">
-      <div className="flex flex-col justify-center min-h-[50vh] gap-4 md:gap-6 w-full md:w-8/10 px-3 py-1.5">
+      <div className="flex flex-col justify-center min-h-[50vh] gap-4 md:gap-6 w-full md:w-9/10 px-3 py-1.5">
         {/* Badge text */}
         <p className="text-primary-blue-40 text-xs sm:text-sm md:text-base lg:text-lg font-medium">
           Used By 2000+ CyberSecurity Enthusiasts

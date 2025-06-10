@@ -11,6 +11,7 @@ import "./index.css";
 import ViewPage from "./pages/StudentView";
 import TeacherViewSession from "./pages/TeacherView";
 import Dashboard from "./pages/TeacherDashboard";
+import SignUpPage from "./pages/Sign-up";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/SignUp" element={<SignUpPage />} />
           <Route path="/Camera" element={<AttentionTracker />} />
           <Route path="/Student" element={<ViewPage />} />
           <Route path="/Teacher-view" element={<TeacherViewSession />} />
