@@ -15,7 +15,7 @@ const HomePage = () => {
 const HomePageContents = () => {
   return (
     <div className="w-full  min-w-[100%] flex flex-col">
-      <div className="flex flex-col justify-center min-h-[50vh] gap-4 md:gap-6 w-full md:w-9/10 px-3 py-1.5">
+      <div className="flex flex-col justify-center min-h-[50vh] gap-4 md:gap-6 w-full md:w-8/10 px-3 py-1.5">
         {/* Badge text */}
         <p className="text-primary-blue-40 text-xs sm:text-sm md:text-base lg:text-lg font-medium">
           Used By 2000+ CyberSecurity Enthusiasts
