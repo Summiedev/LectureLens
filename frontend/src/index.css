@@ -1,6 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap");
 @import "tailwindcss";
-
 :root {
   font-family: "Public Sans", sans-serif;
   line-height: 1.5;
@@ -14,9 +14,26 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --blue-100: #2377cc;
+  --blue-200: #3b82f62e;
+  --blue-300: #2377cc99;
+
+  --white: #ffffff;
+
+  --black-100: #272b2d;
+  --black-200: #32353a;
+
+  --gray-100: #8b949e;
+  --gray-200: #707375;
+  --gray-50: #d9d9d9;
 }
 
 @theme {
+  /* Font Families */
+  --font-sans: "Public Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Public Sans", ui-sans-serif, system-ui, sans-serif;
+
   /* neutral color */
   --color-neutral-100: #272b2d;
   --color-neutral-90: #32353a;
@@ -26,6 +43,8 @@
   --color-neutral-30: #c2c2c2;
   --color-neutral-10: #ffffff;
 
+  --color-primary-orange-80: #df8911;
+
   /* Primary Colors */
   --color-primary-80: #a45838;
   --color-primary-70: #f86b0b;
@@ -33,7 +52,7 @@
   --color-primary-50: #d1d910;
   --color-primary-40: #fabe6b;
   --color-primary-30: #f6b953;
-  --color-primary-20: #f4c0ab;
+  --color-primary-20: #ff6b9d;
 
   --color-primary-blue-80: #0f0f2d;
   --color-primary-blue-70: #1c1f3a;
