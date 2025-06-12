@@ -25,7 +25,7 @@ const PasswordInput = ({
           id={id}
           type={showPassword ? "text" : "password"}
           placeholder={placeholder}
-          className="w-full border border-neutral-30 rounded-lg p-3 pr-12 focus:outline-none focus:ring-2 focus:ring-primary-blue-40 focus:border-transparent transition-all duration-200 text-black"
+          className="w-full border border-black rounded-lg p-3 pr-12 focus:outline-none focus:ring-2 focus:ring-primary-blue-40 focus:border-transparent transition-all duration-200 text-black"
           required={required}
           {...props}
         />

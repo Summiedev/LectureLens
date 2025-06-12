@@ -21,7 +21,7 @@ const SignUpPage = () => {
 
   return (
     <div className="bg-neutral-10 bg-[url('/src/assets/background.png')] bg-cover bg-center bg-no-repeat min-h-screen flex flex-col">
-      <NavBar signUp={true} />
+      <NavBar />
       <div className="flex-1 w-full flex justify-center items-center px-4 mt-10">
         <div className="bg-neutral-10 shadow-lg rounded-lg p-6 max-w-md w-full">
           <div className="flex flex-col justify-center items-center text-center gap-2 mb-6">

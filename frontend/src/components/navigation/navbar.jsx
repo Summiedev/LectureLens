@@ -1,10 +1,10 @@
 import { useState } from "react";
 import Logo from "./logo";
 import { Menu, X } from "lucide-react";
-
-const NavBar = ({ login, signUp }) => {
+import { useLocation, Link } from "react-router-dom";
+const NavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
-
+  const { pathname: pathName } = useLocation();
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };
@@ -16,12 +16,13 @@ const NavBar = ({ login, signUp }) => {
           <Logo />
           {/* conditionally show buttons on props passed */}
           <div className="flex items-center gap-3">
-            {login && <AuthButtons isOpen={isOpen} />}
-            {signUp && <JoinSession />}
+            {pathName === "/" && <AuthButtons isOpen={isOpen} />}
+            {pathName === "/SignUp" ||
+              (pathName === "/Join" && <JoinSession />)}
           </div>
 
           {/* Menu for navbar toggle */}
-          {login && (
+          {pathName === "/" && (
             <button
               onClick={toggleMenu}
               className="md:hidden p-2 rounded-md hover:bg-neutral-30 transition-colors duration-200"
@@ -56,9 +57,12 @@ const AuthButtons = ({ isOpen }) => {
         <button className="text-primary-blue-40 border-0 rounded-sm hover:bg-primary-blue-40 hover:text-neutral-10 transition-colors duration-200 px-3 py-1.5 hover:shadow-sm">
           Login
         </button>
-        <button className="border-0 bg-primary-blue-40 shadow-sm rounded-md px-3 py-1.5 text-white hover:bg-primary-blue-50 transition-colors duration-200">
+        <Link
+          to="/SignUp"
+          className="border-0 bg-primary-blue-40 shadow-sm rounded-md px-3 py-1.5 text-white hover:bg-primary-blue-50 transition-co duration-200"
+        >
           SignUp
-        </button>
+        </Link>
       </div>
 
       {/* Restyled Mobile Navigation */}
@@ -75,9 +79,12 @@ const AuthButtons = ({ isOpen }) => {
             <button className="w-full text-primary-blue-40 bg-transparent border-2 border-primary-blue-40 rounded-lg hover:bg-primary-blue-40 hover:text-white transition-all duration-200 px-4 py-3 font-semibold">
               Login
             </button>
-            <button className="w-full bg-gradient-to-r from-primary-blue-40 to-primary-blue-50 text-white rounded-lg hover:from-primary-blue-50 hover:to-primary-blue-60 transition-all duration-200 px-4 py-3 font-semibold shadow-md">
-              Get Started
-            </button>
+            <Link
+              to="/SignUp"
+              className="w-full bg-gradient-to-r from-primary-blue-40 to-primary-blue-50 text-white rounded-lg hover:from-primary-blue-50 hover:to-primary-blue-60 transition-all duration-200 px-4 py-3 font-semibold shadow-md"
+            >
+              Sign Up
+            </Link>
           </div>
         </div>
       </div>

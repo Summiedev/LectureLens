@@ -9,7 +9,7 @@ export const SessionBtn = ({ role, className }) => {
     >
       <p className={`text-sm self-start text-neutral-10/80`}>{role}</p>
       <p className="flex gap-1">
-        Create session
+        {role === "Teacher" ? "Create session" : "Join session"}
         <span>
           <ChevronRight />
         </span>
