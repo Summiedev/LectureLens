@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import Logo from "./logo";
 import { Menu, X } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
@@ -17,10 +17,10 @@ const NavBar = () => {
           {/* conditionally show buttons on props passed */}
           <div className="flex items-center gap-3">
             {pathName === "/" && <AuthButtons isOpen={isOpen} />}
-            {pathName === "/SignUp" ||
-              (pathName === "/Join" && <JoinSession />)}
+            {pathName === "/SignUp" && <JoinSession />}
+            {pathName === "/Join" && <JoinSession />}
+            {pathName === "/login" && <JoinSession />}
           </div>
-
           {/* Menu for navbar toggle */}
           {pathName === "/" && (
             <button
@@ -43,7 +43,7 @@ const NavBar = () => {
 const JoinSession = () => {
   return (
     <>
-      <button className="border-2 border-primary-blue-50 px-2 py-1 sm:px-3 sm:py-1.5  md:px-5 md:py-2.5 bg-primary-blue-30/60 rounded-lg text-primary-blue-50 hover:bg-primary-blue-50 hover:text-neutral-10 transition-colors duration-200 shadow-sm">
+      <button className="border-0 sm:border-2 sm:border-primary-blue-50 px-2 py-1 sm:px-3 sm:py-1.5  md:px-5 md:py-2.5 bg-none sm:bg-primary-blue-30/60 rounded-lg text-primary-blue-50 hover:bg-primary-blue-50 hover:text-neutral-10 transition-colors duration-200 sm:shadow-sm">
         Join a session
       </button>
     </>
@@ -59,7 +59,8 @@ const AuthButtons = ({ isOpen }) => {
         </button>
         <Link
           to="/SignUp"
-          className="border-0 bg-primary-blue-40 shadow-sm rounded-md px-3 py-1.5 text-white hover:bg-primary-blue-50 transition-co duration-200"
+          className="border-0 bg-primary-blue-40 shadow-sm rounded-md px-3 py-1.5 text-white hover:bg-primary-blue-50 transition-colors duration-200 block text-center"
+          role="button"
         >
           SignUp
         </Link>
@@ -81,7 +82,7 @@ const AuthButtons = ({ isOpen }) => {
             </button>
             <Link
               to="/SignUp"
-              className="w-full bg-gradient-to-r from-primary-blue-40 to-primary-blue-50 text-white rounded-lg hover:from-primary-blue-50 hover:to-primary-blue-60 transition-all duration-200 px-4 py-3 font-semibold shadow-md"
+              className="w-full bg-gradient-to-r from-primary-blue-40 to-primary-blue-50 text-white rounded-lg hover:from-primary-blue-50 hover:to-primary-blue-60 transition-all duration-200 px-4 py-3 font-semibold shadow-md block text-center"
             >
               Sign Up
             </Link>
@@ -92,4 +93,4 @@ const AuthButtons = ({ isOpen }) => {
   );
 };
 
-export default NavBar;
+export default memo(NavBar);

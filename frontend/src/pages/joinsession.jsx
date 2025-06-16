@@ -3,7 +3,7 @@ import Footer from "../components/footer";
 const JoinSessionPage = () => {
   return (
     <div className="bg-neutral-10 bg-[url('/src/assets/background.png')] bg-cover bg-center bg-no-repeat min-h-screen text-black">
-      <NavBar signUp />
+      <NavBar />
       <div className="flex justify-center items-center h-full w-full min-h-[80vh]">
         <div className="w-[400px] rounded-lg bg-primary-blue-20/80 shadow-lg min-h-32 p-8   flex flex-col justify-center gap-4">
           <div className="w-full flex flex-col justify-center bg-secondary-70 px-3 py-1.5 rounded-md gap-0 ring-2 ring-secondary-70/60">

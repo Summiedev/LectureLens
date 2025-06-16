@@ -38,7 +38,6 @@ const SignUpPage = () => {
             className="w-full flex flex-col gap-4"
             onSubmit={(e) => {
               e.preventDefault();
-              console.log(formData);
             }}
           >
             <div className="flex flex-col gap-1">

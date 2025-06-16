@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
-const PasswordInput = ({ 
-  id, 
-  label, 
-  placeholder = "••••••••", 
+const PasswordInput = ({
+  id,
+  label,
+  placeholder = "••••••••",
   required = false,
   className = "",
-  ...props 
+  ...props
 }) => {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -17,10 +17,7 @@ const PasswordInput = ({
 
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
-      <label
-        htmlFor={id}
-        className="text-sm font-medium text-neutral-90"
-      >
+      <label htmlFor={id} className="text-sm font-medium text-neutral-90">
         {label}
       </label>
       <div className="relative">
@@ -28,7 +25,7 @@ const PasswordInput = ({
           id={id}
           type={showPassword ? "text" : "password"}
           placeholder={placeholder}
-          className="w-full border border-neutral-30 rounded-lg p-3 pr-12 focus:outline-none focus:ring-2 focus:ring-primary-blue-40 focus:border-transparent transition-all duration-200"
+          className="w-full border border-black rounded-lg p-3 pr-12 focus:outline-none focus:ring-2 focus:ring-primary-blue-40 focus:border-transparent transition-all duration-200 text-black"
           required={required}
           {...props}
         />

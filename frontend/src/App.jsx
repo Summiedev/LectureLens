@@ -12,6 +12,7 @@ import ViewPage from "./pages/StudentView";
 import TeacherViewSession from "./pages/TeacherView";
 import Dashboard from "./pages/TeacherDashboard";
 import SignUpPage from "./pages/Sign-up";
+import LoginPage from "./pages/Login";
 import JoinSessionPage from "./pages/joinsession";
 import AuthContext from "./context/auth-context";
 
@@ -23,6 +24,7 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/SignUp" element={<SignUpPage />} />
+            <Route path="/Login" element={<LoginPage />} />
             <Route path="/Join" element={<JoinSessionPage />} />
             <Route path="/Camera" element={<AttentionTracker />} />
             <Route path="/Student" element={<ViewPage />} />

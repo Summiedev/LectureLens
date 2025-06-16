@@ -1,13 +1,14 @@
 import Navbar from "../components/navigation/navbar.jsx";
 import { SessionBtn } from "../components/btns.jsx";
 import { BadgeCheck } from "lucide-react";
+import { memo } from "react";
 import { Link } from "react-router-dom";
 const HomePage = () => {
   return (
     <div className="bg-neutral-10 bg-[url('/src/assets/background.png')] bg-cover bg-center bg-no-repeat min-h-screen">
       <Navbar />
       <div className="w-full flex flex-col justify-center md:justify-start items-center md:items-start px-4 md:px-9 pt-10 md:pt-20 relative">
-        <HomePageContents />
+        {memo(<HomePageContents />)}
       </div>
     </div>
   );
@@ -38,12 +39,12 @@ const HomePageContents = () => {
             role="Teacher"
             className="bg-secondary-80 hover:ring-secondary-80/60 w-full"
           />
-          <Link to="Join">
-            <SessionBtn
-              role="Student"
-              className="bg-primary-orange-80 hover:ring-primary-orange-80/60 w-full"
-            />
-          </Link>
+
+          <SessionBtn
+            role="Student"
+            to={"/Join"}
+            className="bg-primary-orange-80 hover:ring-primary-orange-80/60 w-full"
+          />
         </div>
       </div>
 
