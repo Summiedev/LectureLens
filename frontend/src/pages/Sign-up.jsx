@@ -2,6 +2,7 @@ import NavBar from "../components/navigation/navbar.jsx";
 import Footer from "../components/footer.jsx";
 import PasswordInput from "../components/auth/passwordInput.jsx";
 import { useState } from "react";
+import axios from "axios";
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +11,10 @@ const SignUpPage = () => {
     password: "",
     confirmPassword: "",
   });
+
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -17,6 +22,44 @@ const SignUpPage = () => {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await axios.post("http://localhost:3000/api/auth/register", {
+        name: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      // Store token in localStorage
+      const token = res.data.token;
+      localStorage.setItem("token", token);
+
+      // Optionally store user info
+      localStorage.setItem("user", JSON.stringify(res.data.teacher));
+
+      // Redirect to dashboard or login
+      window.location.href = "/dashboard";
+    } catch (err) {
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -33,19 +76,10 @@ const SignUpPage = () => {
             </p>
           </div>
 
-          {/* Main form */}
-          <form
-            className="w-full flex flex-col gap-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              console.log(formData);
-            }}
-          >
+          {/* Form */}
+          <form className="w-full flex flex-col gap-4" onSubmit={handleSubmit}>
             <div className="flex flex-col gap-1">
-              <label
-                htmlFor="fullname"
-                className="text-sm font-medium text-neutral-90"
-              >
+              <label htmlFor="fullname" className="text-sm font-medium text-neutral-90">
                 Full Name
               </label>
               <input
@@ -55,16 +89,13 @@ const SignUpPage = () => {
                 placeholder="John Doe"
                 value={formData.fullName}
                 onChange={handleInputChange}
-                className={`w-full border text-black rounded-lg p-3 focus:outline-none focus:ring-2 transition-all duration-200 `}
+                className="w-full border text-black rounded-lg p-3 focus:outline-none focus:ring-2 transition-all duration-200"
                 required
               />
             </div>
 
             <div className="flex flex-col gap-1">
-              <label
-                htmlFor="email"
-                className="text-sm font-medium text-neutral-90"
-              >
+              <label htmlFor="email" className="text-sm font-medium text-neutral-90">
                 Email Address
               </label>
               <input
@@ -74,7 +105,7 @@ const SignUpPage = () => {
                 placeholder="john.doe@example.com"
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`w-full border text-black rounded-lg p-3 focus:outline-none focus:ring-2 transition-all duration-200`}
+                className="w-full border text-black rounded-lg p-3 focus:outline-none focus:ring-2 transition-all duration-200"
                 required
               />
             </div>
@@ -99,13 +130,17 @@ const SignUpPage = () => {
 
             <button
               type="submit"
-              className={`w-full rounded-lg p-3 font-medium transition-colors duration-200 mt-2 bg-primary-blue-40 cursor-pointer`}
+              className={`w-full rounded-lg p-3 font-medium transition-colors duration-200 mt-2 bg-primary-blue-40 cursor-pointer ${
+                loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              disabled={loading}
             >
-              Continue
+              {loading ? "Creating account..." : "Continue"}
             </button>
+
+            {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
           </form>
 
-          {/* Additional links */}
           <div className="text-center mt-4">
             <p className="text-sm text-neutral-70">
               Already have an account?{" "}

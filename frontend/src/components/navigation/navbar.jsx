@@ -54,10 +54,14 @@ const AuthButtons = ({ isOpen }) => {
     <>
       <div className="hidden md:flex items-center gap-3">
         <button className="text-primary-blue-40 border-0 rounded-sm hover:bg-primary-blue-40 hover:text-neutral-10 transition-colors duration-200 px-3 py-1.5 hover:shadow-sm">
-          Login
+         <a href="/login" className="text-white font-medium hover:text-gray-300">
+            Login
+            </a> 
         </button>
         <button className="border-0 bg-primary-blue-40 shadow-sm rounded-md px-3 py-1.5 text-white hover:bg-primary-blue-50 transition-colors duration-200">
-          SignUp
+          <a href="/signup" className="text-white font-medium hover:text-gray-300">
+            Signup
+            </a> 
         </button>
       </div>
 

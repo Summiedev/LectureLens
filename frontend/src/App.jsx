@@ -25,7 +25,7 @@ function App() {
           <Route path="/Camera" element={<AttentionTracker />} />
           <Route path="/Student" element={<ViewPage />} />
           <Route path="/Teacher-view" element={<TeacherViewSession />} />
-          <Route path="/Teacher-dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </Router>
     </>
