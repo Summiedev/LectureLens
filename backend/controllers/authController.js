@@ -12,9 +12,7 @@ const register = async (req, res) => {
         .json({ error: "Name, email, and password are required" });
     }
     if (data) {
-      return res
-        .status(400)
-        .json({ field: "email", message: "Email already in use" });
+      return res.status(400).json({ error: "Email already in use" });
     }
 
     // Supabase auth
@@ -30,8 +28,7 @@ const register = async (req, res) => {
 
     if (authError) {
       return res.status(400).json({
-        field: authError.message.includes("email") ? "email" : "general",
-        message: authError.message,
+        error: authError.message,
       });
     }
 
@@ -75,13 +72,22 @@ const login = async (req, res) => {
     }
 
     // Get teacher data from your database
-    const teacher = await getTeacherByEmail(email);
+    const { data: teacher, error: teacherError } = await getTeacherByEmail(
+      email
+    );
+    if (teacherError || !teacher) {
+      return res.status(401).json({ error: "Couldn't find teacher" });
+    }
 
     res.json({
       user: data.user,
       session: data.session,
       teacher: teacher
-        ? { id: teacher.id, name: teacher.name, email: teacher.email }
+        ? {
+            id: teacher.supabase_user_id,
+            name: teacher.name,
+            email: teacher.email,
+          }
         : null,
     });
   } catch (err) {

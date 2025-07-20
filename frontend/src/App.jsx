@@ -14,13 +14,13 @@ import Dashboard from "./pages/TeacherDashboard";
 import SignUpPage from "./pages/Sign-up";
 import LoginPage from "./pages/Login";
 import JoinSessionPage from "./pages/joinsession";
-import AuthContext from "./context/auth-context";
+import AuthContextProvider from "./context/auth-context";
 
 function App() {
   return (
     <>
-      <AuthContext.Provider value={{ isLoggedIn: false }}>
-        <Router>
+      <Router>
+        <AuthContextProvider>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/SignUp" element={<SignUpPage />} />
@@ -31,8 +31,8 @@ function App() {
             <Route path="/Teacher-view" element={<TeacherViewSession />} />
             <Route path="/Teacher-dashboard" element={<Dashboard />} />
           </Routes>
-        </Router>
-      </AuthContext.Provider>
+        </AuthContextProvider>
+      </Router>
     </>
   );
 }

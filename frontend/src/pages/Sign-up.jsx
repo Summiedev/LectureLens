@@ -1,8 +1,11 @@
 import NavBar from "../components/navigation/navbar.jsx";
 import Footer from "../components/footer.jsx";
 import PasswordInput from "../components/auth/passwordInput.jsx";
-import { useState } from "react";
-
+import { useEffect, useState } from "react";
+import { usePost } from "../hooks/api.js";
+import { useAuthContext } from "../context/auth-context.jsx";
+import { ButtonLoader } from "../components/Loader.jsx";
+import { Link } from "react-router-dom";
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
     fullName: "",
@@ -10,6 +13,44 @@ const SignUpPage = () => {
     password: "",
     confirmPassword: "",
   });
+  const [formError, setFormError] = useState("");
+  const { loading, error, postData } = usePost();
+  const { loginHandler } = useAuthContext();
+
+  useEffect(() => {
+    const validateForm = () => {
+      if (formData.fullName.length === 0) return;
+      if (formData.fullName && formData.fullName.length < 2) {
+        setFormError("Full name too short");
+        return;
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (formData.email && !emailRegex.test(formData.email)) {
+        setFormError("Please enter a valid email address");
+        return;
+      }
+
+      if (
+        formData.password &&
+        formData.confirmPassword &&
+        formData.password !== formData.confirmPassword
+      ) {
+        setFormError("Passwords do not match");
+        return false;
+      }
+      if (formData.password && formData.password.length < 6) {
+        setFormError("Password must be at least 6 characters long");
+        return false;
+      }
+    };
+    const interval = setTimeout(() => {
+      validateForm();
+    }, 700);
+    return () => {
+      clearTimeout(interval);
+    };
+  }, [formData]);
+
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -17,6 +58,24 @@ const SignUpPage = () => {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const result = await postData("/auth/register", {
+        name: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      const token = result?.token;
+      const user = result?.teacher;
+
+      loginHandler(user, token);
+    } catch (err) {
+      setFormError(err.message);
+    }
   };
 
   return (
@@ -33,12 +92,17 @@ const SignUpPage = () => {
             </p>
           </div>
 
+          {/* Error Display */}
+          {(error || formError) && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">
+              {formError || error}
+            </div>
+          )}
+
           {/* Main form */}
           <form
             className="w-full flex flex-col gap-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-            }}
+            onSubmit={handleFormSubmit}
           >
             <div className="flex flex-col gap-1">
               <label
@@ -54,8 +118,9 @@ const SignUpPage = () => {
                 placeholder="John Doe"
                 value={formData.fullName}
                 onChange={handleInputChange}
-                className={`w-full border text-black rounded-lg p-3 focus:outline-none focus:ring-2 transition-all duration-200 `}
+                className="w-full border border-neutral-30 text-black rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-blue-40 transition-all duration-200"
                 required
+                disabled={loading}
               />
             </div>
 
@@ -73,8 +138,9 @@ const SignUpPage = () => {
                 placeholder="john.doe@example.com"
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`w-full border text-black rounded-lg p-3 focus:outline-none focus:ring-2 transition-all duration-200`}
+                className="w-full border border-neutral-30 text-black rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-blue-40 transition-all duration-200"
                 required
+                disabled={loading}
               />
             </div>
 
@@ -84,6 +150,8 @@ const SignUpPage = () => {
               label="Password"
               value={formData.password}
               onChange={handleInputChange}
+              placeholder="••••••••"
+              disabled={loading}
               required
             />
 
@@ -93,14 +161,28 @@ const SignUpPage = () => {
               label="Confirm Password"
               value={formData.confirmPassword}
               onChange={handleInputChange}
+              placeholder="••••••••"
+              disabled={loading}
               required
             />
 
             <button
               type="submit"
-              className={`w-full rounded-lg p-3 font-medium transition-colors duration-200 mt-2 bg-primary-blue-40 cursor-pointer`}
+              disabled={loading}
+              className={`w-full rounded-lg p-3 font-medium transition-colors duration-200 mt-2 flex items-center justify-center gap-2 ${
+                loading
+                  ? "bg-neutral-40 text-neutral-70 cursor-not-allowed"
+                  : "bg-primary-blue-40 text-white hover:bg-primary-blue-50 cursor-pointer"
+              }`}
             >
-              Continue
+              {loading ? (
+                <>
+                  <ButtonLoader variant="dots" size="sm" />
+                  <span>Creating account...</span>
+                </>
+              ) : (
+                "Continue"
+              )}
             </button>
           </form>
 
@@ -108,12 +190,12 @@ const SignUpPage = () => {
           <div className="text-center mt-4">
             <p className="text-sm text-neutral-70">
               Already have an account?{" "}
-              <a
-                href="/login"
+              <Link
+                to="/login"
                 className="text-primary-blue-40 hover:text-primary-blue-50 font-medium"
               >
                 Sign in
-              </a>
+              </Link>
             </p>
           </div>
         </div>

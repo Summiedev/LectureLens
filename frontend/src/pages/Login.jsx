@@ -2,11 +2,19 @@ import NavBar from "../components/navigation/navbar.jsx";
 import Footer from "../components/footer.jsx";
 import PasswordInput from "../components/PasswordInput.jsx";
 import { useState } from "react";
+import { useAuthContext } from "../context/auth-context.jsx";
+import { usePost } from "../hooks/api.js";
+import { Link } from "react-router-dom";
+import { ButtonLoader } from "../components/Loader.jsx";
+
 const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const { loading, error, postData } = usePost();
+  const { loginHandler } = useAuthContext();
+
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -14,6 +22,25 @@ const Login = () => {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleFormSubmit = async () => {
+    try {
+      const result = await postData("/auth/login", {
+        email: formData.email,
+        password: formData.password,
+      });
+
+      const token = result?.session?.access_token;
+      const user = result?.teacher;
+
+      if (!token || !user) {
+        throw new Error("Invalid response from server");
+      }
+      loginHandler(user, token);
+    } catch (err) {
+      console.log(error || err.message);
+    }
   };
 
   return (
@@ -31,10 +58,19 @@ const Login = () => {
                 classes
               </p>
             </div>
+
+            {/* Error Display */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">
+                {error}
+              </div>
+            )}
+
             <form
               className="w-full flex flex-col gap-4"
               onSubmit={(e) => {
                 e.preventDefault();
+                handleFormSubmit();
               }}
             >
               <div className="flex flex-col gap-1">
@@ -51,39 +87,57 @@ const Login = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="john.doe@example.com"
-                  className={`w-full border text-black rounded-lg p-3 focus:outline-none focus:ring-2 transition-all duration-200`}
+                  className="w-full border border-neutral-30 text-black rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-blue-40 transition-all duration-200"
                   required
+                  disabled={loading}
                 />
               </div>
+
               <PasswordInput
                 id="password"
                 name="password"
                 label="Password"
                 value={formData.password}
                 onChange={handleInputChange}
-                placeholder="........"
+                placeholder="••••••••"
+                disabled={loading}
                 required
               />
-              <p className="text-neutral-40 self-end text-sm">
-                Forgot Password ?
+
+              <p className="text-neutral-40 self-end text-sm cursor-pointer hover:text-primary-blue-40">
+                Forgot Password?
               </p>
+
               <button
                 type="submit"
-                className={`w-full rounded-lg p-3 font-medium transition-colors duration-200 mt-2 bg-primary-blue-40 cursor-pointer`}
+                disabled={loading}
+                className={`w-full rounded-lg p-3 font-medium transition-colors duration-200 mt-2 flex items-center justify-center gap-2 ${
+                  loading
+                    ? "bg-neutral-40 text-neutral-70 cursor-not-allowed"
+                    : "bg-primary-blue-40 text-white hover:bg-primary-blue-50 cursor-pointer"
+                }`}
               >
-                Continue
+                {loading ? (
+                  <>
+                    <ButtonLoader variant="dots" size="sm" />
+                    <span>Signing in...</span>
+                  </>
+                ) : (
+                  "Continue"
+                )}
               </button>
             </form>
+
             {/* Additional links */}
             <div className="text-center mt-4">
               <p className="text-sm text-neutral-70">
-                Don't have an account?
-                <a
-                  href="/SignUp"
+                Don't have an account?{" "}
+                <Link
+                  to="/SignUp"
                   className="text-primary-blue-40 hover:text-primary-blue-50 font-medium"
                 >
                   Sign up
-                </a>
+                </Link>
               </p>
             </div>
           </div>
@@ -93,4 +147,5 @@ const Login = () => {
     </>
   );
 };
+
 export default Login;

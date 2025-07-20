@@ -2,8 +2,11 @@ import { useState, memo } from "react";
 import Logo from "./logo";
 import { Menu, X } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
+import { useAuthContext } from "../../context/auth-context";
+
 const NavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { isLoggedIn } = useAuthContext();
   const { pathname: pathName } = useLocation();
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -16,10 +19,22 @@ const NavBar = () => {
           <Logo />
           {/* conditionally show buttons on props passed */}
           <div className="flex items-center gap-3">
-            {pathName === "/" && <AuthButtons isOpen={isOpen} />}
-            {pathName === "/SignUp" && <JoinSession />}
-            {pathName === "/Join" && <JoinSession />}
-            {pathName === "/login" && <JoinSession />}
+            {pathName === "/" && !isLoggedIn && <AuthButtons isOpen={isOpen} />}
+
+            {pathName === "/" && isLoggedIn && <UserBar />}
+
+            {(pathName === "/SignUp" || pathName === "/login") && (
+              <JoinSession />
+            )}
+
+            {pathName === "/Join" && (
+              <Link
+                to="/"
+                className="text-primary-blue-40 hover:text-primary-blue-50"
+              >
+                Back to Home
+              </Link>
+            )}
           </div>
           {/* Menu for navbar toggle */}
           {pathName === "/" && (
@@ -40,12 +55,36 @@ const NavBar = () => {
   );
 };
 
+const UserBar = () => {
+  const { user } = useAuthContext();
+  return (
+    <>
+      <input
+        type="text"
+        placeholder="Search sessions"
+        className="px-4 py-2 border rounded-md text-sm focus:outline-none focus:ring focus:ring-blue-300"
+      />
+      <div className="w-8 h-8 rounded-full overflow-hidden">
+        <img
+          src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ4YreOWfDX3kK-QLAbAL4ufCPc84ol2MA8Xg&s"
+          alt="User avatar"
+        />
+      </div>
+      <span className="text-sm text-gray-700 capitalize">{user?.name}</span>
+    </>
+  );
+};
+
 const JoinSession = () => {
   return (
     <>
-      <button className="border-0 sm:border-2 sm:border-primary-blue-50 px-2 py-1 sm:px-3 sm:py-1.5  md:px-5 md:py-2.5 bg-none sm:bg-primary-blue-30/60 rounded-lg text-primary-blue-50 hover:bg-primary-blue-50 hover:text-neutral-10 transition-colors duration-200 sm:shadow-sm">
+      <Link
+        to="/Join"
+        role="button"
+        className="border-0 block sm:border-2 sm:border-primary-blue-50 px-2 py-1 sm:px-3 sm:py-1.5  md:px-5 md:py-2.5 bg-none sm:bg-primary-blue-30/60 rounded-lg text-primary-blue-50 hover:bg-primary-blue-50 hover:text-neutral-10 transition-colors duration-200 sm:shadow-sm"
+      >
         Join a session
-      </button>
+      </Link>
     </>
   );
 };
@@ -54,9 +93,12 @@ const AuthButtons = ({ isOpen }) => {
   return (
     <>
       <div className="hidden md:flex items-center gap-3">
-        <button className="text-primary-blue-40 border-0 rounded-sm hover:bg-primary-blue-40 hover:text-neutral-10 transition-colors duration-200 px-3 py-1.5 hover:shadow-sm">
+        <Link
+          to="/login"
+          className="text-primary-blue-40 border-0 rounded-sm hover:bg-primary-blue-40 hover:text-neutral-10 transition-colors duration-200 px-3 py-1.5 hover:shadow-sm"
+        >
           Login
-        </button>
+        </Link>
         <Link
           to="/SignUp"
           className="border-0 bg-primary-blue-40 shadow-sm rounded-md px-3 py-1.5 text-white hover:bg-primary-blue-50 transition-colors duration-200 block text-center"
