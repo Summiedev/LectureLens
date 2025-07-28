@@ -3,6 +3,7 @@ import Logo from "./logo";
 import { Menu, X } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { useAuthContext } from "../../context/auth-context";
+import { Search } from "lucide-react";
 
 const NavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,7 +22,8 @@ const NavBar = () => {
           <div className="flex items-center gap-3">
             {pathName === "/" && !isLoggedIn && <AuthButtons isOpen={isOpen} />}
 
-            {pathName === "/" && isLoggedIn && <UserBar />}
+            {(pathName === "/" || pathName.startsWith("/teacher-dashboard")) &&
+              isLoggedIn && <UserBar />}
 
             {(pathName === "/SignUp" || pathName === "/login") && (
               <JoinSession />
@@ -36,7 +38,6 @@ const NavBar = () => {
               </Link>
             )}
           </div>
-          {/* Menu for navbar toggle */}
           {pathName === "/" && (
             <button
               onClick={toggleMenu}
@@ -59,11 +60,15 @@ const UserBar = () => {
   const { user } = useAuthContext();
   return (
     <>
-      <input
-        type="text"
-        placeholder="Search sessions"
-        className="px-4 py-2 border rounded-md text-sm focus:outline-none focus:ring focus:ring-blue-300"
-      />
+      <div className="hidden md:flex items-center  text-black">
+        <Search className="ml-2 text-neutral-30 absolute size-5" />
+        <input
+          type="text"
+          placeholder="Search sessions"
+          className="px-4 pl-8 py-2  bg-neutral-30/30 text-black rounded-md text-sm focus:outline-none focus:ring focus:ring-blue-300 hidden md:block"
+        />
+      </div>
+
       <div className="w-8 h-8 rounded-full overflow-hidden">
         <img
           src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ4YreOWfDX3kK-QLAbAL4ufCPc84ol2MA8Xg&s"

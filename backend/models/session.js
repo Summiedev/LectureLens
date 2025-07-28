@@ -1,8 +1,8 @@
 import { supabase } from "../config/db.js";
-export const createSession = async ({ title, subject, teacherId }) => {
+export const createSession = async ({ title, subject, teacherId, date }) => {
   const { data, error } = await supabase
     .from("sessions")
-    .insert([{ title, subject, teacher_id: teacherId }])
+    .insert([{ title, subject, teacher_id: teacherId, date }])
     .select();
   return { data, error };
 };

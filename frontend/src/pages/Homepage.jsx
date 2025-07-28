@@ -36,13 +36,13 @@ const HomePageContents = () => {
         <div className="flex gap-3 w-full flex-wrap">
           <SessionBtn
             role="Teacher"
-            className="bg-secondary-80 hover:ring-secondary-80/60 w-full"
+            className="bg-secondary-80 ring-secondary-80/60 hover:ring-secondary-80/80 transition-colors w-full text-white"
           />
 
           <SessionBtn
             role="Student"
             to={"/Join"}
-            className="bg-primary-orange-80 hover:ring-primary-orange-80/60 w-full"
+            className="bg-primary-orange-80 ring-primary-orange-80/60 text-white hover:ring-primary-orange-80/80 transition-colors w-full"
           />
         </div>
       </div>

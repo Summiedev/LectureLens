@@ -5,23 +5,54 @@ import { createSession as createSessionService } from "../models/session.js";
 import { deleteSession as deleteSessionService } from "../models/session.js";
 import { createSlide } from "../models/slide.js";
 import { createQuestion } from "../models/question.js";
+
 // Create a new session (teacher-only)
 export const createSession = async (req, res) => {
-  const { title, subject } = req.body;
-  const teacherId = req.teacher.id;
+  try {
+    console.log("Request body:", req.body);
 
-  const { data, error } = await createSessionService({
-    title,
-    subject,
-    teacherId,
-  });
+    const { title, subject, dateTime, fileUrl } = req.body;
 
-  if (error) {
-    return res.status(500).json({ error: error.message });
+    if (!title || !subject) {
+      return res.status(400).json({ error: "Title and subject are required" });
+    }
+    const teacherId = req.teacher.id;
+    const { data: sessionData, error } = await createSessionService({
+      title,
+      subject,
+      date: dateTime,
+      teacherId,
+    });
+
+    if (error) {
+      console.error("Session creation error:", error);
+      return res
+        .status(500)
+        .json({ error: `Error creating session: ${error.message}` });
+    }
+
+    const sessionId = sessionData?.[0]?.session_id;
+
+    if (fileUrl && sessionId) {
+      const { data: slideData, error: slideError } = await createSlide(
+        sessionId,
+        title,
+        fileUrl
+      );
+
+      if (slideError) {
+        console.warn("Slide creation failed:", slideError.message);
+      }
+    }
+
+    res.status(201).json({
+      sessionId,
+      message: "Session created successfully",
+    });
+  } catch (err) {
+    console.error("Create session error:", err);
+    res.status(500).json({ error: "Failed to create session" });
   }
-
-   res.status(201).json({ sessionId: data?.[0]?.id }); 
-   console.log("Created session:", data);
 };
 // Delete session
 export const deleteSession = async (req, res) => {
@@ -57,12 +88,17 @@ export const uploadSlides = async (req, res) => {
   const { title, pdfUrl, slideQuestions } = req.body;
 
   try {
-    const { data, error } = await createSlide(sessionId, title, pdfUrl, slideQuestions);
+    const { data, error } = await createSlide(
+      sessionId,
+      title,
+      pdfUrl,
+      slideQuestions
+    );
     if (error) throw error;
 
     res.status(201).json({
       success: true,
-      slideData: data
+      slideData: data,
     });
   } catch (err) {
     console.error("❌ Slide upload failed:", err.message);
@@ -92,7 +128,7 @@ export const addQuestions = async (req, res) => {
         slideId,
         questionText: question_text,
         answers,
-        correct_answer
+        correct_answer,
       });
 
       if (error) {
@@ -122,7 +158,8 @@ export const joinSession = async (req, res) => {
     .eq("session_id", sessionCode)
     .single();
 
-  if (sessErr || !session) return res.status(404).json({ error: "Session not found" });
+  if (sessErr || !session)
+    return res.status(404).json({ error: "Session not found" });
 
   const participant_uuid = uuidv4();
 
@@ -136,7 +173,10 @@ export const joinSession = async (req, res) => {
 
   if (error) return res.status(500).json({ error: error.message });
 
-  res.json({ sessionId: session.session_id, participantUuid: participant_uuid });
+  res.json({
+    sessionId: session.session_id,
+    participantUuid: participant_uuid,
+  });
 };
 
 // Log attention score done done
@@ -153,7 +193,10 @@ export const logAttention = async (req, res) => {
     },
   ]);
   if (error) return res.status(500).json({ error: error.message });
-  res.json({ success: true ,data: { sessionId, participantUuid, slideIndex, attentionScore, timestamp } });
+  res.json({
+    success: true,
+    data: { sessionId, participantUuid, slideIndex, attentionScore, timestamp },
+  });
 };
 
 // Fetch micro-quiz for a slide
@@ -292,7 +335,6 @@ export const getParticipants = async (req, res) => {
   res.json({ participants: data });
 };
 
-
 export const getParticipantReport = async (req, res) => {
   const { sessionId, uuid } = req.params;
 
@@ -351,7 +393,9 @@ export const getDashboardSummary = async (req, res) => {
     .eq("teacher_id", teacherId); // added filter to only get sessions for this teacher
 
   if (sErr || !sessions) {
-    return res.status(500).json({ error: sErr?.message || "Could not fetch sessions" });
+    return res
+      .status(500)
+      .json({ error: sErr?.message || "Could not fetch sessions" });
   }
 
   const sessionIds = sessions.map((s) => s.id);
@@ -362,7 +406,9 @@ export const getDashboardSummary = async (req, res) => {
     .in("session_id", sessionIds);
 
   if (fErr || !focusStats) {
-    return res.status(500).json({ error: fErr?.message || "Could not fetch focus stats" });
+    return res
+      .status(500)
+      .json({ error: fErr?.message || "Could not fetch focus stats" });
   }
 
   const totalSessions = sessions.length;

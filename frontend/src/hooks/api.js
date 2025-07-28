@@ -8,34 +8,46 @@ export const usePost = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const postData = useCallback(async (url, body, options = {}) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await fetch(`${API_BASE_URL}${url}`, {
-        method: "POST",
-        headers: {
+  const postData = useCallback(
+    async (url, body, token = null, options = {}) => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const headers = {
           "Content-Type": "application/json",
           ...options.headers,
-        },
-        body: JSON.stringify(body),
-        ...options,
-      });
-      if (!res.ok || res.status == 400) {
-        const err = await res.json();
-        console.log(err);
-        throw new Error(err.error);
+        };
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+
+        const res = await fetch(`${API_BASE_URL}${url}`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+          ...options,
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          console.log(err);
+          throw new Error(err.error || err.message || "Request failed");
+        }
+
+        const responseData = await res.json();
+        setData(responseData);
+        return responseData;
+      } catch (error) {
+        console.error(error);
+        setError(error.message);
+        throw new Error(error.message);
+      } finally {
+        setLoading(false);
       }
-      const data = await res.json();
-      setData(data);
-      return data;
-    } catch (error) {
-      console.error(error);
-      setError(`${error.message}`);
-      throw new Error(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    []
+  );
+
   return { data, loading, error, postData };
 };

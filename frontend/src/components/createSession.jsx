@@ -1,55 +1,243 @@
-import { UploadCloud, ArrowLeft, Lock } from 'lucide-react';
+import { UploadCloud, ArrowLeft, Lock } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { DateTimePicker } from "./datepicker";
+import { useState } from "react";
+import { File } from "lucide-react";
+import { handleFileUpload as uploadFile } from "../utils/db";
+import { usePost } from "../hooks/api";
+import { useAuthContext } from "../context/auth-context";
+import { X } from "lucide-react";
+import Loader from "./loader";
 
 export default function CreateSessionForm() {
-  return (
-    <div className="max-w-3xl mx-auto bg-white shadow-md rounded-lg overflow-hidden">
-      <div className="p-4 flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-        <ArrowLeft className="w-4 h-4" /> Back
-      </div>
+  const [sessionDateTime, setSessionDateTime] = useState(null);
+  const [sessionFormData, setSessionFormData] = useState({
+    sessionName: "",
+    sessionFile: undefined,
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const [loadingText, setLoadingText] = useState("Creating session...");
 
-      <div className="bg-orange-500 text-white py-4 px-6 rounded-t-lg">
+  const { loading, error, postData } = usePost();
+  const { token } = useAuthContext();
+
+  const navigate = useNavigate();
+
+  const handleDateTimeChange = (dateTime) => {
+    setSessionDateTime(dateTime);
+  };
+
+  const handleSessionNameChange = (e) => {
+    setSessionFormData({
+      ...sessionFormData,
+      sessionName: e.target.value,
+    });
+    if (errorMsg) setErrorMsg("");
+  };
+
+  const handleFileUpload = (e) => {
+    setSessionFormData({
+      ...sessionFormData,
+      sessionFile: e.target.files[0],
+    });
+    if (errorMsg) setErrorMsg("");
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMsg("");
+
+    if (!sessionFormData.sessionName.trim()) {
+      setErrorMsg("Please enter a session name");
+      return;
+    }
+
+    if (!sessionDateTime) {
+      setErrorMsg("Please select a date and time for the session");
+      return;
+    }
+
+    if (!sessionFormData.sessionFile) {
+      setErrorMsg("Please upload a session file");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setLoadingText("Uploading File...");
+
+    try {
+      const fileUrl = await uploadFile(sessionFormData.sessionFile);
+      setLoadingText("Creating Session...");
+      const data = await postData(
+        "/sessions",
+        {
+          title: sessionFormData.sessionName,
+          subject: sessionFormData.sessionName,
+          dateTime: sessionDateTime,
+          fileUrl,
+        },
+        token
+      );
+      const sessionId = data?.sessionId;
+      setLoadingText("Session Created Successfully!");
+      navigate("/teacher-dashboard");
+    } catch (err) {
+      console.error(err.message || error);
+      setErrorMsg(
+        err.message ||
+          error?.message ||
+          "Failed to create session. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-4xl px-4 mx-auto bg-white shadow-md rounded-lg overflow-hidden">
+      <Link
+        to={"/teacher-dashboard"}
+        className="py-4 flex items-center gap-2 text-md text-gray-600 cursor-pointer w-fit"
+      >
+        <ArrowLeft className="w-4 h-4" /> Back
+      </Link>
+
+      <div className="bg-primary-50 ring-4 ring-primary-40/50 text-white py-4 px-6 rounded-lg flex flex-col items-start justify-center">
         <p className="text-xs font-medium">Teacher</p>
         <h2 className="text-lg font-semibold">Create session</h2>
       </div>
 
-      <div className="p-6 space-y-6">
+      <form className="p-6 space-y-6 relative" onSubmit={handleSubmit}>
+        {/* Form-wide Loading Overlay */}
+        {isSubmitting && (
+          <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
+            <div className="text-center">
+              <Loader size="lg" variant="orbit" color="primary" />
+              <p className="mt-4 text-gray-700 font-medium animate-pulse">
+                {loadingText}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {errorMsg && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+            <div className="flex items-center gap-2">
+              <svg
+                className="w-4 h-4 flex-shrink-0"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              {errorMsg}
+            </div>
+          </div>
+        )}
+
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Session Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1 text-start">
+            Session Name
+          </label>
           <input
             type="text"
-            defaultValue="John Doe"
-            className="w-full border rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            placeholder="Enter session name"
+            value={sessionFormData.sessionName}
+            onChange={handleSessionNameChange}
+            disabled={isSubmitting}
+            className="w-full border rounded-md px-4 py-2 text-black border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Session Duration</label>
-          <input
-            type="email"
-            defaultValue="Johndoe@gmail.com"
-            className="w-full border rounded-md px-4 py-2 bg-gray-100 text-gray-700 focus:outline-none"
+          <label className="block text-sm font-medium text-gray-700 mb-3 text-start">
+            Session Date & Time
+          </label>
+          <DateTimePicker
+            onChange={handleDateTimeChange}
+            disabled={isSubmitting}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Upload Material</label>
-          <div className="border border-dashed border-teal-300 p-6 rounded-md text-center">
-            <div className="flex justify-center mb-2">
-              <UploadCloud className="text-green-600 w-6 h-6" />
+          <label className="block text-sm font-medium text-gray-700 mb-2 text-start">
+            Upload Material
+          </label>
+          {sessionFormData.sessionFile ? (
+            <div className="border border-dashed border-teal-300 p-3 text-start rounded-md relative flex gap-0.5 items-center justify-between">
+              <div className="flex items-center gap-1">
+                Selected File: <File className="size-4" />
+                {sessionFormData.sessionFile.name}
+              </div>
+              <div
+                onClick={() =>
+                  !isSubmitting &&
+                  setSessionFormData({
+                    ...sessionFormData,
+                    sessionFile: undefined,
+                  })
+                }
+                className={`text-red-500 text-sm ${
+                  isSubmitting
+                    ? "cursor-not-allowed opacity-50"
+                    : "cursor-pointer"
+                }`}
+              >
+                <X />
+              </div>
             </div>
-            <p className="font-semibold text-gray-700">Upload file</p>
-            <p className="text-sm text-gray-500 mb-4">Click to browse or drag & drop a file here</p>
-            <button className="bg-green-400 text-white px-8 py-2 rounded-md hover:bg-green-500 transition">
-              Upload
-            </button>
-          </div>
+          ) : (
+            <div
+              className={`border border-teal-300 p-6 rounded-md text-center relative ${
+                isDragging
+                  ? "border-2 border-teal-500 bg-teal-50"
+                  : "border-dashed"
+              }`}
+              onDragEnter={() => !isSubmitting && setIsDragging(true)}
+              onDragOver={() => !isSubmitting && setIsDragging(true)}
+              onDragLeave={() => setIsDragging(false)}
+            >
+              <input
+                type="file"
+                name="sessionFile"
+                id="sessionFile"
+                onChange={handleFileUpload}
+                disabled={isSubmitting}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+              />
+              <div className="flex justify-center mb-2">
+                <UploadCloud className="text-green-600 w-6 h-6" />
+              </div>
+              <p className="font-semibold text-gray-700">Upload file</p>
+              <p className="text-sm text-gray-500 mb-4">
+                Click to browse or drag & drop a file here
+              </p>
+              <button
+                type="button"
+                className="bg-green-400 text-white px-8 py-2 rounded-md hover:bg-green-500 transition pointer-events-none"
+              >
+                Upload
+              </button>
+            </div>
+          )}
         </div>
 
-        <button className="w-full bg-blue-600 text-white py-3 rounded-md flex justify-center items-center gap-2 hover:bg-blue-700 transition">
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full bg-blue-600 text-white py-3 rounded-md flex justify-center items-center gap-2 hover:bg-blue-700 transition disabled:bg-blue-400 disabled:cursor-not-allowed"
+        >
           <Lock className="w-4 h-4" />
           Create a session
         </button>
-      </div>
+      </form>
     </div>
   );
 }

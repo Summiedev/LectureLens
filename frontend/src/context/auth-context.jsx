@@ -15,9 +15,19 @@ const AuthContextProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [token, setToken] = useState("");
   const [user, setUser] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
 
   const navigate = useNavigate();
-
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user && token) {
+      setIsLoggedIn(true);
+      setUser(user);
+      setToken(token);
+    }
+    setIsLoading(false);
+  }, []);
   const loginHandler = useCallback(
     (user, token) => {
       setToken(token);
@@ -30,18 +40,9 @@ const AuthContextProvider = ({ children }) => {
     [navigate]
   );
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (user && token) {
-      setUser(user);
-      setToken(token);
-      setIsLoggedIn(true);
-    }
-  }, []);
   return (
     <AuthContext.Provider
-      value={{ isLoggedIn: isLoggedIn, loginHandler, token, user }}
+      value={{ isLoggedIn: isLoggedIn, loginHandler, token, user, isLoading }}
     >
       {children}
     </AuthContext.Provider>

@@ -4,7 +4,7 @@ import PasswordInput from "../components/auth/passwordInput.jsx";
 import { useEffect, useState } from "react";
 import { usePost } from "../hooks/api.js";
 import { useAuthContext } from "../context/auth-context.jsx";
-import { ButtonLoader } from "../components/Loader.jsx";
+import { ButtonLoader } from "../components/loader.jsx";
 import { Link } from "react-router-dom";
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
