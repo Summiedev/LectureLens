@@ -105,10 +105,7 @@ const SignUpPage = () => {
             onSubmit={handleFormSubmit}
           >
             <div className="flex flex-col gap-1">
-              <label
-                htmlFor="fullname"
-                className="text-sm font-medium text-neutral-90"
-              >
+              <label htmlFor="fullname" className="text-sm font-medium text-neutral-90">
                 Full Name
               </label>
               <input
@@ -125,10 +122,7 @@ const SignUpPage = () => {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label
-                htmlFor="email"
-                className="text-sm font-medium text-neutral-90"
-              >
+              <label htmlFor="email" className="text-sm font-medium text-neutral-90">
                 Email Address
               </label>
               <input
@@ -184,9 +178,10 @@ const SignUpPage = () => {
                 "Continue"
               )}
             </button>
+
+            {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
           </form>
 
-          {/* Additional links */}
           <div className="text-center mt-4">
             <p className="text-sm text-neutral-70">
               Already have an account?{" "}
