@@ -291,7 +291,7 @@ export const listSessions = async (req, res) => {
 
   const { data, error } = await supabase
     .from("sessions")
-    .select("*")
+    .select("* , slides(storage_path)")
     .eq("teacher_id", teacherId)
     .order("created_at", { ascending: false });
 

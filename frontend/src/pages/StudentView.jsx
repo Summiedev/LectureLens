@@ -1,53 +1,55 @@
-import React, { useState, useEffect } from 'react';
-import FastFocusTracker from './StudentCamera';
-import { Camera, EyeOff } from 'lucide-react';
-import HeroSection from '../assets/presentation screen.png';
-import { io } from 'socket.io-client';
-import PDFSlideViewer from '../components/pdfViewer';
+import React, { useState, useEffect } from "react";
+import FastFocusTracker from "./StudentCamera";
+import { Camera, EyeOff } from "lucide-react";
+import HeroSection from "../assets/presentation screen.png";
+import { io } from "socket.io-client";
+// import PDFSlideViewer from "../components/pdfViewer";
 
-const socket = io('http://localhost:5000'); // adjust host:port
+// const socket = io('http://localhost:5000'); // adjust host:port
 
 export default function StudentViewPage() {
   const [showTrackerUI, setShowTrackerUI] = useState(true);
-  const [slideIndex, setSlideIndex]     = useState(0);
+  const [slideIndex, setSlideIndex] = useState(0);
   const [participantUuid, setParticipantUuid] = useState(null);
-  const sessionId = '123456'; // replace with route param or context
+  const sessionId = "123456"; // replace with route param or context
 
   // 1️⃣ Join session on mount
   useEffect(() => {
     async function join() {
       try {
-        const res = await fetch('/api/sessions/join', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("/api/sessions/join", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             sessionCode: sessionId,
-            name: 'Laila Oreoluwa'
-          })
+            name: "Laila Oreoluwa",
+          }),
         });
         const { participantUuid: uuid } = await res.json();
         setParticipantUuid(uuid);
 
         // then join socket room
-        socket.emit('joinSession', { sessionId, role: 'student' });
-        socket.on('slideChange', ({ slideIndex }) => {
+        socket.emit("joinSession", { sessionId, role: "student" });
+        socket.on("slideChange", ({ slideIndex }) => {
           setSlideIndex(slideIndex);
         });
       } catch (err) {
-        console.error('Join session failed', err);
+        console.error("Join session failed", err);
       }
     }
     join();
-    return () => { socket.off('slideChange'); };
+    return () => {
+      socket.off("slideChange");
+    };
   }, [sessionId]);
 
   // 2️⃣ Leave session handler
   const leaveSession = async () => {
     if (!participantUuid) return;
     await fetch(`/api/sessions/${sessionId}/leave`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ participantUuid })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ participantUuid }),
     });
     // redirect or cleanup...
   };
@@ -57,7 +59,9 @@ export default function StudentViewPage() {
       {/* Header */}
       <header className="bg-white rounded-b-md shadow p-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Histology of the Gallbladder</h1>
+          <h1 className="text-xl font-semibold">
+            Histology of the Gallbladder
+          </h1>
           <p className="text-sm text-gray-500">June 12th, 2025 | 11:00 AM</p>
         </div>
         <div className="flex items-center gap-4">
@@ -89,9 +93,9 @@ export default function StudentViewPage() {
         </div>
 
        Leave */}
-       
-    <PDFSlideViewer file={samplePDF} slideIndex={slideIndex} />
-  </div>
+
+          <PDFSlideViewer file={samplePDF} slideIndex={slideIndex} />
+        </div>
         <button
           onClick={leaveSession}
           className="bg-red-500 text-white w-full font-semibold px-6 py-5 rounded shadow hover:bg-red-600 mb-6"
@@ -104,9 +108,13 @@ export default function StudentViewPage() {
           <button
             onClick={() => setShowTrackerUI(!showTrackerUI)}
             className="mb-2 p-2 bg-white border rounded-full shadow hover:bg-gray-100"
-            title={showTrackerUI ? 'Hide Camera' : 'Show Camera'}
+            title={showTrackerUI ? "Hide Camera" : "Show Camera"}
           >
-            {showTrackerUI ? <EyeOff className="w-5 h-5" /> : <Camera className="w-5 h-5" />}
+            {showTrackerUI ? (
+              <EyeOff className="w-5 h-5" />
+            ) : (
+              <Camera className="w-5 h-5" />
+            )}
           </button>
           {showTrackerUI && participantUuid && (
             <FastFocusTracker
@@ -120,9 +128,14 @@ export default function StudentViewPage() {
 
       {/* Footer */}
       <footer className="text-center py-4 text-sm text-gray-500 border-t">
-        &copy; 2025 LectureLens. All rights reserved.{' '}
-        <a href="#" className="underline">Privacy Policy</a> &amp;{' '}
-        <a href="#" className="underline">Terms of Service</a>
+        &copy; 2025 LectureLens. All rights reserved.{" "}
+        <a href="#" className="underline">
+          Privacy Policy
+        </a>{" "}
+        &amp;{" "}
+        <a href="#" className="underline">
+          Terms of Service
+        </a>
       </footer>
     </div>
   );

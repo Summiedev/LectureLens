@@ -1,197 +1,112 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { io } from 'socket.io-client';
-import Footer from '../components/footer';
-import Header from '../components/header';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Copy, CopyCheck } from "lucide-react";
+import { useState } from "react";
+import PagePreview from "../components/pagePreview";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { ChevronRight, ChevronLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const socket = io('http://localhost:5000'); // your backend URL
+const TeacherView = () => {
+  const navigate = useNavigate();
+  const storage_path =
+    "https://noebaxzcqhhsnzzlclqg.supabase.co/storage/v1/object/public/sessionfiles/1754466322623_37rfywb7ph8.pdf";
+  const sessionId = "u78-uy6-po9-po1";
+  const [isCopied, setIsCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(sessionId);
+    setIsCopied(true);
 
-export default function TeacherViewSession() {
-  const { sessionId } = useParams();
-  const [session, setSession]             = useState(null);
-  const [slides, setSlides]               = useState([]);
-  const [slideIndex, setSlideIndex]       = useState(0);
-  const [participants, setParticipants]   = useState([]);
-  const [focusPoints, setFocusPoints]     = useState({});
-  const [activeTab, setActiveTab]         = useState('students');
-
-  // ————————————————————————————————————————
-  // 1. Load session details & slides & participants
-  // ————————————————————————————————————————
-  useEffect(() => {
-    // Fetch session info
-    fetch(`/api/sessions/${sessionId}`)
-      .then(r => r.json())
-      .then(data => setSession(data.session));
-    // Fetch slides (with JSONB questions)
-    fetch(`/api/sessions/${sessionId}/slides`)
-      .then(r => r.json())
-      .then(data => setSlides(data.slides));
-    // Fetch participants
-    fetch(`/api/sessions/${sessionId}/participants`)
-      .then(r => r.json())
-      .then(data => setParticipants(data.participants));
-    // Fetch focus points
-    fetch(`/api/sessions/${sessionId}/analytics`)
-      .then(r => r.json())
-      .then(({ leaderboard }) => {
-        // map uuid→points
-        const fp = {};
-        leaderboard.forEach(({ participant_uuid, points }) => {
-          fp[participant_uuid] = points;
-        });
-        setFocusPoints(fp);
-      });
-  }, [sessionId]);
-
-  // ————————————————————————————————————————
-  // 2. Socket.IO: join & listen for slide changes
-  // ————————————————————————————————————————
-  useEffect(() => {
-    socket.emit('joinSession', { sessionId, role: 'teacher' });
-    socket.on('slideChange', ({ slideIndex }) => {
-      setSlideIndex(slideIndex);
-    });
-    return () => {
-      socket.off('slideChange');
-    };
-  }, [sessionId]);
-
-  // ————————————————————————————————————————
-  // 3. Helper: Change slide (and notify via socket + persist)
-  // ————————————————————————————————————————
-  const changeSlide = async (newIndex) => {
-    if (newIndex < 0 || newIndex >= slides.length) return;
-    setSlideIndex(newIndex);
-    socket.emit('slideChange', { sessionId, slideIndex: newIndex });
-    // persist in DB
-    await fetch(`/api/sessions/${sessionId}/updateCurrentSlide`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slideIndex: newIndex })
-    });
+    setTimeout(() => {
+      setIsCopied(false);
+    }, 2000);
   };
-
-  // ————————————————————————————————————————
-  // 4. Render
-  // ————————————————————————————————————————
-  if (!session) return <div>Loading session...</div>;
-
-  const currentSlide = slides[slideIndex] || {};
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header/>
-      <main className="flex-1 p-6">
-        {/* Back button & session info */}
-        <div className="flex items-center gap-4 mb-6">
-          <button onClick={() => window.history.back()} className="text-blue-600 font-bold text-xl">←</button>
-          <div>
-            <h1 className="text-2xl font-semibold">{session.title}</h1>
-            <p className="text-sm text-gray-500">{new Date(session.created_at).toLocaleString()}</p>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            {participants.slice(0, 5).map((p) => (
-              <img
-                key={p.uuid}
-                className="w-8 h-8 rounded-full border-2 border-white"
-                src={`https://randomuser.me/api/portraits/lego/${p.uuid.charCodeAt(0)%10}.jpg`}
-                alt={p.name}
-              />
-            ))}
-            {participants.length > 5 && (
-              <div className="w-8 h-8 rounded-full bg-gray-300 text-sm flex items-center justify-center border-2 border-white">
-                +{participants.length - 5}
-              </div>
-            )}
-            <input
-              value={session.code}
-              readOnly
-              className="bg-gray-100 px-4 py-1 rounded-md text-sm border border-gray-300"
-            />
-          </div>
-        </div>
-
-        {/* Slide Viewer */}
-        <div className="relative bg-black rounded-lg overflow-hidden">
-          <div className="flex justify-between absolute top-1/2 w-full px-4 z-10">
-            <ChevronLeft
-              className="w-8 h-8 text-white cursor-pointer"
-              onClick={() => changeSlide(slideIndex - 1)}
-            />
-            <ChevronRight
-              className="w-8 h-8 text-white cursor-pointer"
-              onClick={() => changeSlide(slideIndex + 1)}
-            />
-          </div>
-          <embed
-            src={currentSlide.storage_path + `#page=${currentSlide.page_number}`}
-            type="application/pdf"
-            className="w-full h-[600px] object-contain"
-          />
+    <main className="bg-neutral-30 min-h-screen  flex flex-col pb-3">
+      {/* NavBar \ Header */}
+      <div className="w-full h-20 bg-neutral-10 shadow-sm px-3 py-1.5 md:px-5 gap-4 md:py-2.5 items-center flex justify-between">
+        <div className="flex items-center gap-2 md:gap-5">
           <div
-            onClick={() => changeSlide(slideIndex + 1)}
-            className="text-white text-center bg-red-600 py-2 cursor-pointer font-semibold"
+            className="flex items-center justify-center rounded-full size-5 md:size-7 bg-info-50 cursor-pointer"
+            onClick={() => {
+              const canGoBack = (window.history.state?.idx ?? 0) > 0;
+              if (canGoBack) navigate(-1);
+              else navigate("/teacher-dashboard", { replace: true });
+            }}
           >
-            End session
+            <ArrowLeft className=" size-3 md:size-5 text-neutral-10" />
+          </div>
+          <div className="flex flex-col  justify-center">
+            <p className="font-semibold text-xs md:text-md sm:text-sm lg:text-lg line-clamp-1">
+              Histology of the Gallbladder
+            </p>
+            <p className="text-neutral-50 text-xs md:text-sm lg:text-md line-clamp-1">
+              June 16, 2025 | 12:00 AM
+            </p>
           </div>
         </div>
-
-        {/* Analytics Cards */}
-        <div className="mt-6 flex gap-4 overflow-x-auto">
-          {/* Simplified: show overall avg from analytics */}
-          {/* You can fetch per-slide avg and render similarly */}
+        <div className="md:w-45 w-40 rounded-sm  h-8 md:h-10 bg-neutral-30/50 justify-between items-center px-4 py-2 text-[10px] sm:text-xs md:text-sm flex gap-1 line-clamp-1">
+          <p className="line-clamp-1">{sessionId}</p>
+          {!isCopied ? (
+            <Copy
+              className={`size-4 cursor-pointer transition-all duration-200 hover:scale-110 hover:text-info-60 ${
+                isCopied ? "scale-125 text-info-70" : ""
+              }`}
+              onClick={handleCopy}
+            />
+          ) : (
+            <CopyCheck className="size-4 text-green-600 animate-pulse" />
+          )}
         </div>
+      </div>
 
-        {/* Tabs */}
-        <div className="mt-6 bg-gray-50 p-4 rounded-lg">
-          <div className="flex mb-4 border rounded-lg overflow-hidden">
+      {/* Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-[80%_20%] grid-rows-[65%_35%] gap-4 p-4 md:p-6 lg:p-8 min-h-[90vh] justify-center">
+        <div className=" bg-blue-50 rounded-md shadow-sm/1 relative">
+          <div className="h-10 cursor-pointer ring-2 ring-warning-50/50 absolute text-neutral-10 bg-warning-50 rounded-sm w-[70%] flex justify-center items-center bottom-2 left-1/2 -translate-x-1/2 text-xs md:text-sm lg:text-md font-semibold px-3 py-1">
+            End Session
+          </div>
+        </div>
+        <div className="bg-red-50 row-span-2 hidden shadow-sm/1 md:block rounded-md"></div>
+        {/* slides breakdown */}
+        <div className="rounded-md shadow-sm/1 min-h-50 bg-neutral-10 p-3  gap-3 relative px-14">
+          <div className="absolute inset-0 flex justify-between items-center p-2 ">
             <button
-              className={`w-full py-2 text-center ${activeTab === 'students' ? 'bg-white font-semibold' : 'bg-gray-200'}`}
-              onClick={() => setActiveTab('students')}
+              type="button"
+              aria-label="Previous"
+              className="shrink-0 inline-flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 size-9 md:size-10"
             >
-              Students
+              <ChevronLeft className="size-5" />
             </button>
             <button
-              className={`w-full py-2 text-center ${activeTab === 'quizzes' ? 'bg-white font-semibold' : 'bg-gray-200'}`}
-              onClick={() => setActiveTab('quizzes')}
+              type="button"
+              aria-label="Next"
+              className="shrink-0 inline-flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 size-9 md:size-10"
             >
-              Quizzes
+              <ChevronRight className="size-5" />
             </button>
           </div>
 
-          {activeTab === 'students' && (
-            <div className="space-y-3">
-              {participants.map((p) => (
-                <div key={p.uuid} className="flex items-center gap-4">
-                  <img src={`https://randomuser.me/api/portraits/lego/${p.uuid.charCodeAt(0)%10}.jpg`} className="w-8 h-8 rounded-full" />
-                  <p className="font-medium">{p.name}</p>
-                  <span className="ml-auto text-blue-600 font-semibold">
-                    {focusPoints[p.uuid] ?? 10} points
-                  </span>
-                </div>
-              ))}
+          <ScrollArea className="flex-1 rounded-md">
+            <div className="flex w-max gap-3 h-full">
+              <PagePreview
+                storage_path={storage_path}
+                averageAttention={79.5}
+              />
+              <PagePreview storage_path={storage_path} />
+              <PagePreview
+                storage_path={storage_path}
+                averageAttention={10.9}
+              />
+              <PagePreview
+                storage_path={storage_path}
+                averageAttention={49.9}
+              />
             </div>
-          )}
-
-          {activeTab === 'quizzes' && (
-            <div className="space-y-4 text-gray-700">
-              {Object.entries(currentSlide.slide_questions || {}).map(([page, qs]) => (
-                <div key={page}>
-                  <h3 className="font-semibold">Page {page}</h3>
-                  <ul className="list-disc list-inside">
-                    {qs.map((q, i) => (
-                      <li key={i}>{q.question}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
         </div>
-      </main>
-      <Footer />
-    </div>
+      </div>
+    </main>
   );
-}
+};
+
+export default TeacherView;

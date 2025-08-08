@@ -1,8 +1,7 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import AttentionTracker from "./pages/StudentCamera";
-
 import HomePage from "./pages/Homepage";
-import Navbar from "./components/navigation/navbar";
+
 import "./index.css";
 
 import ViewPage from "./pages/StudentView";
@@ -13,6 +12,14 @@ import LoginPage from "./pages/Login";
 import JoinSessionPage from "./pages/joinsession";
 import AuthContextProvider from "./context/auth-context";
 import { ProtectedRoute } from "./components/protected-route";
+
+import { pdfjs } from "react-pdf";
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).toString();
+import "react-pdf/dist/Page/TextLayer.css";
+import "react-pdf/dist/Page/AnnotationLayer.css";
 
 function App() {
   return (
@@ -27,7 +34,7 @@ function App() {
             <Route path="/Camera" element={<AttentionTracker />} />
             <Route path="/Student" element={<ViewPage />} />
             <Route
-              path="/teacher-view"
+              path="/teacher-view/:session_id"
               element={
                 <ProtectedRoute>
                   <TeacherViewSession />

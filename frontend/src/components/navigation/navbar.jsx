@@ -8,7 +8,8 @@ import { Search } from "lucide-react";
 const NavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { isLoggedIn } = useAuthContext();
-  const { pathname: pathName } = useLocation();
+  const { pathname } = useLocation();
+  const pathName = pathname.toLowerCase();
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };

@@ -5,6 +5,10 @@ import { Route, Routes } from "react-router-dom";
 import SessionCard from "../components/sessionCard";
 import CreateSessionForm from "../components/createSession";
 import { Link } from "react-router-dom";
+import { useGet } from "../hooks/api";
+import Loader from "../components/loader";
+import { useAuthContext } from "../context/auth-context";
+import { useEffect, useState } from "react";
 
 export default function Dashboard() {
   return (
@@ -21,11 +25,39 @@ export default function Dashboard() {
   );
 }
 const DashboardPage = () => {
-  const session = true;
+  const [sessions, setSessions] = useState([]);
+
+  const { loading, error, getData } = useGet();
+  const { token } = useAuthContext();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (token) {
+        const data = await getData("/sessions", token);
+        console.log(data);
+        const { sessions } = data;
+        setSessions(sessions || []);
+      }
+    };
+    fetchData();
+  }, [token]);
+
+  const isSessionsEmpty = !sessions || sessions.length === 0;
+
   return (
     <>
-      {!session && <EmptyTeacherDashboard />}
-      {session && (
+      {isSessionsEmpty && !loading && <EmptyTeacherDashboard />}
+      {isSessionsEmpty && loading && (
+        <div className="w-full h-full flex items-center justify-center py-16">
+          <Loader
+            size="lg"
+            variant="orbit"
+            color="primary"
+            text="Loading your sessions..."
+          />
+        </div>
+      )}
+      {!isSessionsEmpty && !loading && (
         <>
           <div className="shadow-md/-1 flex-col gap-3 bg-white w-full px-4 py-2 rounded-sm md:h-40 h-20 flex justify-center items-center">
             <div className="bg-neutral-30/50 text-black rounded-sm w-20  px-6 py-3 items-center justify-center h-15 hidden md:flex">
@@ -42,7 +74,7 @@ const DashboardPage = () => {
             </div>
             <div className="flex w-full gap-3 px-2 py-1 mt-5 md:justify-start flex-col md:flex-row flex-wrap justify-center md:items-start items-center">
               {sessions.map((session) => (
-                <SessionCard key={session.id} session={session} />
+                <SessionCard key={session.session_id} session={session} />
               ))}
             </div>
           </div>
@@ -108,38 +140,3 @@ const CreateSessionBtn = () => {
     </Link>
   );
 };
-
-const sessions = [
-  {
-    id: 1,
-    title: "Introduction to React Hooks",
-    date: "July 20, 2025",
-    image:
-      "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=200&fit=crop",
-    averageAttention: 78,
-  },
-  {
-    id: 2,
-    title: "Advanced JavaScript Concepts",
-    date: "July 18, 2025",
-    image:
-      "https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=400&h=200&fit=crop",
-    averageAttention: 45,
-  },
-  {
-    id: 3,
-    title: "Database Design Principles",
-    date: "July 15, 2025",
-    image:
-      "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=400&h=200&fit=crop",
-    averageAttention: 92,
-  },
-  {
-    id: 8,
-    title: "Database Design Principles",
-    date: "July 15, 2025",
-    image:
-      "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=400&h=200&fit=crop",
-    averageAttention: 32.9,
-  },
-];

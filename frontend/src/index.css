@@ -107,6 +107,7 @@
   --color-secondary-20: #71d0b9;
 
   --color-info-50: #3b82f6;
+  --color-warning-50: #ef4444;
 }
 /* Orbit Animations */
 @keyframes orbit-container {
