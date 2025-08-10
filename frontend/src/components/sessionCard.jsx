@@ -1,21 +1,24 @@
 import { Document, Page } from "react-pdf";
 import { format } from "date-fns";
+import { Link } from "react-router-dom";
+const formatSessionDate = (dateObj) => {
+  if (!dateObj) return "No date";
 
+  try {
+    const date = new Date(dateObj);
+    return format(date, "MMMM dd, yyyy | hh:mm aa");
+  } catch (error) {
+    return "Invalid date";
+  }
+};
 const SessionCard = ({ session }) => {
-  const formatSessionDate = (dateObj) => {
-    if (!dateObj) return "No date";
-
-    try {
-      const date = new Date(dateObj);
-      return format(date, "MMMM dd, yyyy | hh:mm aa");
-    } catch (error) {
-      return "Invalid date";
-    }
-  };
-
   return (
     <>
-      <main className="rounded-md shadow-sm/1 border min-h-65 min-w-40 border-neutral-30/50 w-full flex-1 max-w-90">
+      <main className="rounded-md shadow-sm/1 border min-h-65 min-w-40 border-neutral-30/50 w-full flex-1 max-w-90 relative">
+        <Link
+          to={`/session/${session?.session_id}`}
+          className="absolute inset-0 z-50 text-transparent cursor-pointer w-full h-full"
+        ></Link>
         <Document file={session?.slides?.storage_path} className="w-full h-40 ">
           <Page
             className={`w-full h-38 object-cover rounded-t-md flex justify-center items-center ${
@@ -31,7 +34,6 @@ const SessionCard = ({ session }) => {
             renderTextLayer={false}
           />
         </Document>
-
         <div className="flex flex-col p-2 gap-2">
           <div className="flex flex-col items-start">
             <h3 className="text-sm font-semibold text-black">

@@ -1,4 +1,5 @@
 import { Document, Page } from "react-pdf";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PagePreview = ({
   pageNumber = 1,
@@ -14,6 +15,9 @@ const PagePreview = ({
         <div className="absolute md:hidden inset-0 bg-black/40 z-10 rounded-md"></div>
         <Document
           file={storage_path}
+          loading={
+            <Skeleton className="flex-1 min-h-0 w-full overflow-hidden grid place-items-center rounded-md" />
+          }
           className={`flex-1 min-h-0 w-full overflow-hidden grid place-items-center rounded-md md:rounded-t-md md:rounded-b-none
             ${
               averageAttention

@@ -527,3 +527,112 @@
     @apply bg-background text-foreground;
   }
 }
+/* ...existing code... */
+
+/* --- NotFound custom animations --- */
+@keyframes aurora {
+  0% {
+    transform: translateY(-4%) translateX(0%);
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    transform: translateY(4%) translateX(2%);
+    filter: hue-rotate(10deg);
+  }
+  100% {
+    transform: translateY(-3%) translateX(-2%);
+    filter: hue-rotate(0deg);
+  }
+}
+@keyframes sparkle {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.8) translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15) translateY(-2px);
+  }
+}
+@keyframes parallax-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(6px, -8px, 0);
+  }
+}
+@keyframes tilt {
+  0%,
+  100% {
+    transform: rotate(-1.5deg);
+  }
+  50% {
+    transform: rotate(1.5deg);
+  }
+}
+@keyframes shine-sweep {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Utilities */
+.animate-aurora {
+  animation: aurora 12s ease-in-out infinite alternate;
+}
+.animate-sparkle {
+  animation: sparkle 2.6s ease-in-out infinite;
+}
+.animate-parallax {
+  animation: parallax-float 6s ease-in-out infinite;
+}
+.animate-tilt {
+  animation: tilt 7s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+.animate-shine-sweep {
+  animation: shine-sweep 2s ease-in-out infinite;
+}
+.animate-marquee {
+  animation: marquee 22s linear infinite;
+}
+
+/* Shimmer track helper (if not already present) */
+.shimmer-bg {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
+  transform: translateX(-100%);
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-shine-sweep,
+  .animate-twinkle,
+  .animate-breath-glow,
+  .animate-orbit-container,
+  .animate-orbit-1,
+  .animate-orbit-2,
+  .animate-orbit-3,
+  .animate-fade-in,
+  .animate-float {
+    animation: none !important;
+  }
+}

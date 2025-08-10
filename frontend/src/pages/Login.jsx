@@ -30,14 +30,13 @@ const Login = () => {
         email: formData.email,
         password: formData.password,
       });
-
-      const token = result?.session?.access_token;
+      const session = result?.session;
       const user = result?.teacher;
 
-      if (!token || !user) {
+      if (!session || !user) {
         throw new Error("Invalid response from server");
       }
-      loginHandler(user, token);
+      loginHandler(user, session);
     } catch (err) {
       console.log(error || err.message);
     }

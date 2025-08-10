@@ -11,6 +11,7 @@ import SignUpPage from "./pages/Sign-up";
 import LoginPage from "./pages/Login";
 import JoinSessionPage from "./pages/joinsession";
 import AuthContextProvider from "./context/auth-context";
+import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/protected-route";
 
 import { pdfjs } from "react-pdf";
@@ -34,7 +35,7 @@ function App() {
             <Route path="/Camera" element={<AttentionTracker />} />
             <Route path="/Student" element={<ViewPage />} />
             <Route
-              path="/teacher-view/:session_id"
+              path="/session/:session_id"
               element={
                 <ProtectedRoute>
                   <TeacherViewSession />
@@ -48,7 +49,8 @@ function App() {
                   <Dashboard />
                 </ProtectedRoute>
               }
-            />
+            />{" "}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthContextProvider>
       </Router>

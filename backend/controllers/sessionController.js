@@ -54,6 +54,33 @@ export const createSession = async (req, res) => {
     res.status(500).json({ error: "Failed to create session" });
   }
 };
+
+export const listSessions = async (req, res) => {
+  const teacherId = req.teacher.id;
+
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("* , slides(storage_path)")
+    .eq("teacher_id", teacherId)
+    .order("created_at", { ascending: false });
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ sessions: data });
+};
+
+export const getSessionByID = async (req, res) => {
+  const { sessionId } = req.params;
+
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("* , slides(storage_path)")
+    .eq("session_id", sessionId)
+    .single();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ session: data });
+};
+
 // Delete session
 export const deleteSession = async (req, res) => {
   const { id } = req.params;
@@ -284,19 +311,6 @@ export const getAnalytics = async (req, res) => {
     .order("points", { ascending: false });
 
   res.json({ attentionBySlide, leaderboard });
-};
-
-export const listSessions = async (req, res) => {
-  const teacherId = req.teacher.id;
-
-  const { data, error } = await supabase
-    .from("sessions")
-    .select("* , slides(storage_path)")
-    .eq("teacher_id", teacherId)
-    .order("created_at", { ascending: false });
-
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ sessions: data });
 };
 
 export const getSlides = async (req, res) => {
