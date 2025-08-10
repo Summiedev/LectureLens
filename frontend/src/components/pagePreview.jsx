@@ -18,7 +18,7 @@ const PagePreview = ({
           loading={
             <Skeleton className="flex-1 min-h-0 w-full overflow-hidden grid place-items-center rounded-md" />
           }
-          className={`flex-1 min-h-0 w-full overflow-hidden grid place-items-center rounded-md md:rounded-t-md md:rounded-b-none
+          className={`flex-1 min-h-30 w-full overflow-hidden grid place-items-center rounded-md md:rounded-t-md md:rounded-b-none
             ${
               averageAttention
                 ? averageAttention > 60

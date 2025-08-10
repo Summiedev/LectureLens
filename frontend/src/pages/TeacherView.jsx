@@ -23,7 +23,6 @@ const TeacherView = () => {
     const fetchData = async () => {
       try {
         const { session } = await getData(`/sessions/${sessionId}`, token);
-        console.log(session);
         setSessionData(session);
       } catch (error) {
         console.error("Error fetching session data:", error);
@@ -65,7 +64,7 @@ const TeacherView = () => {
         {loading ? (
           <Skeleton />
         ) : (
-          <div className="bg-neutral-10 rounded-md shadow-sm/1 relative flex min-h-0">
+          <div className="bg-neutral-10 rounded-md shadow-sm/1 relative flex min-h-0 max-height-[80%]">
             <Document
               file={sessionData?.slides?.storage_path}
               onLoadSuccess={onLoadSuccess}
@@ -79,9 +78,9 @@ const TeacherView = () => {
                 renderAnnotationLayer={false}
                 renderTextLayer={false}
                 className="
-                  size-full grid place-items-center rounded-md
+                   grid place-items-center rounded-md
                   [&_canvas]:max-w-full [&_canvas]:max-h-full
-                  [&_canvas]:w-auto [&_canvas]:h-auto
+                  [&_canvas]:!w-auto [&_canvas]:!h-auto
                   [&_canvas]:object-contain [&_canvas]:block
                   [&_canvas]:m-auto
                 "
@@ -96,46 +95,48 @@ const TeacherView = () => {
 
         <div className="bg-red-50 row-span-2 hidden shadow-sm/1 md:block rounded-md"></div>
         {/* slides breakdown */}
-        <div className="rounded-md shadow-sm/1 min-h-50 bg-neutral-10 p-3 gap-3 relative px-14 grid grid-cols-1 grid-rows-1 items-center">
-          <div className="absolute inset-0 flex justify-between items-center p-2 ">
-            <button
-              type="button"
-              aria-label="Previous"
-              onClick={() =>
-                setCurrentPage((prev) => {
-                  return prev - 1 === 0 ? numPages : prev - 1;
-                })
-              }
-              className="shrink-0 inline-flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 size-9 md:size-10 cursor-pointer"
-            >
-              <ChevronLeft className="size-5" />
-            </button>
-            <button
-              type="button"
-              aria-label="Next"
-              onClick={() => {
-                setCurrentPage((prev) => {
-                  return prev + 1 > numPages ? 1 : prev + 1;
-                });
-              }}
-              className="shrink-0 inline-flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 size-9 md:size-10 cursor-pointer"
-            >
-              <ChevronRight className="size-5" />
-            </button>
-          </div>
-
-          <ScrollArea className="flex-1 rounded-md">
-            <div className="flex w-max gap-3 h-full">
-              {Array.from({ length: numPages }, (_, index) => (
-                <PagePreview
-                  key={index + 1}
-                  pageNumber={index + 1}
-                  storage_path={sessionData?.slides?.storage_path}
-                />
-              ))}
+        <div className="rounded-md shadow-sm/1 min-h-50 grid grid-cols-1 grid-rows-1 items-center">
+          <div className="rounded-md shadow-sm/1 min-h-50  p-3 gap-3 relative px-14 grid grid-cols-1 grid-rows-1 items-center bg-neutral-10">
+            <div className="absolute inset-0 flex justify-between items-center p-2 ">
+              <button
+                type="button"
+                aria-label="Previous"
+                onClick={() =>
+                  setCurrentPage((prev) => {
+                    return prev - 1 === 0 ? numPages : prev - 1;
+                  })
+                }
+                className="shrink-0 inline-flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 size-9 md:size-10 cursor-pointer"
+              >
+                <ChevronLeft className="size-5" />
+              </button>
+              <button
+                type="button"
+                aria-label="Next"
+                onClick={() => {
+                  setCurrentPage((prev) => {
+                    return prev + 1 > numPages ? 1 : prev + 1;
+                  });
+                }}
+                className="shrink-0 inline-flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 size-9 md:size-10 cursor-pointer"
+              >
+                <ChevronRight className="size-5" />
+              </button>
             </div>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
+
+            <ScrollArea className="flex-1 rounded-md">
+              <div className="flex w-max gap-3 h-full">
+                {Array.from({ length: numPages }, (_, index) => (
+                  <PagePreview
+                    key={index + 1}
+                    pageNumber={index + 1}
+                    storage_path={sessionData?.slides?.storage_path}
+                  />
+                ))}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+          </div>
         </div>
       </div>
     </main>

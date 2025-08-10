@@ -34,7 +34,6 @@ const DashboardPage = () => {
     const fetchData = async () => {
       if (token) {
         const data = await getData("/sessions", token);
-        console.log(data);
         const { sessions } = data;
         setSessions(sessions || []);
       }

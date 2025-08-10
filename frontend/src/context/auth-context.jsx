@@ -30,11 +30,11 @@ const AuthContextProvider = ({ children }) => {
         const refresh = session?.refresh_token || "";
         setToken(access);
         setRefreshToken(refresh);
-        setUser(session?.user ?? null);
+        setUser(session?.user.user_metadata ?? null);
         setIsLoggedIn(!!access);
-        localStorage.setItem("session", JSON.stringify(session)); // persist fresh tokens
+        localStorage.setItem("session", JSON.stringify(session));
       }
-      // Optional: keep user in sync if metadata changes
+
       if (event === "USER_UPDATED") {
         setUser(session?.user ?? null);
       }
@@ -60,17 +60,14 @@ const AuthContextProvider = ({ children }) => {
         if (!active) {
           const stored = JSON.parse(localStorage.getItem("session") || "null");
           if (stored?.access_token && stored?.refresh_token) {
-            const { data, error } = await supabase.auth.setSession({
-              access_token: stored.access_token,
-              refresh_token: stored.refresh_token,
-            });
+            const { data, error } = await supabase.auth.setSession(stored);
             if (error) throw error;
             active = data?.session ?? null;
           }
         }
 
         if (active) {
-          setUser(active.user ?? null);
+          setUser(active.user.user_metadata ?? null);
           setToken(active.access_token || "");
           setRefreshToken(active.refresh_token || "");
           setIsLoggedIn(true);
@@ -96,7 +93,7 @@ const AuthContextProvider = ({ children }) => {
         setRefreshToken(data.session?.refresh_token);
         localStorage.setItem("session", JSON.stringify(data.session));
         localStorage.setItem("user", JSON.stringify(user));
-        setUser(user);
+        setUser(user.user_metadata);
         setIsLoggedIn(true);
         navigate("/teacher-dashboard");
       } catch (error) {

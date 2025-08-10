@@ -36,7 +36,7 @@ const Login = () => {
       if (!session || !user) {
         throw new Error("Invalid response from server");
       }
-      loginHandler(user, session);
+      loginHandler(session);
     } catch (err) {
       console.log(error || err.message);
     }
