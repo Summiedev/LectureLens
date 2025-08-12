@@ -14,7 +14,7 @@ const formatSessionDate = (dateObj) => {
 const SessionCard = ({ session }) => {
   return (
     <>
-      <main className="rounded-md shadow-sm/1 border min-h-65 min-w-70 border-neutral-30/50 w-full flex-1 max-w-80 relative">
+      <main className="rounded-md shadow-sm/1 border min-h-65 border-neutral-30/50 w-full max-w-80 relative">
         <Link
           to={`/session/${session?.session_id}`}
           className="absolute inset-0 z-50 text-transparent cursor-pointer w-full h-full"
@@ -27,7 +27,12 @@ const SessionCard = ({ session }) => {
                   ? "border-green-600/50"
                   : "border-red-600/50"
                 : "border-neutral-50"
-            } border`}
+            } border
+              
+              [&_canvas]:max-w-full [&_canvas]:max-h-full
+              [&_canvas]:!w-full [&_canvas]:!h-full
+              [&_canvas]:object-contain [&_canvas]:block
+            `}
             pageNumber={1}
             height={158}
             renderAnnotationLayer={false}

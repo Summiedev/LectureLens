@@ -7,9 +7,10 @@ import { handleFileUpload as uploadFile } from "../utils/db";
 import { usePost } from "../hooks/api";
 import { useAuthContext } from "../context/auth-context";
 import { X } from "lucide-react";
-import Loader from "./loader";
+import { useAppContext } from "../context/state";
 
 export default function CreateSessionForm() {
+  const { addMessage, updateMessage } = useAppContext();
   const [sessionDateTime, setSessionDateTime] = useState(null);
   const [sessionFormData, setSessionFormData] = useState({
     sessionName: "",
@@ -18,7 +19,6 @@ export default function CreateSessionForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isDragging, setIsDragging] = useState(false);
-  const [loadingText, setLoadingText] = useState("Creating session...");
 
   const { loading, error, postData } = usePost();
   const { token } = useAuthContext();
@@ -63,13 +63,21 @@ export default function CreateSessionForm() {
       setErrorMsg("Please upload a session file");
       return;
     }
-
+    const msgId = new Date().getTime();
     setIsSubmitting(true);
-    setLoadingText("Uploading File...");
+    addMessage({
+      id: msgId,
+      message: "Uploading File...",
+      state: "loading",
+    });
 
     try {
       const fileUrl = await uploadFile(sessionFormData.sessionFile);
-      setLoadingText("Creating Session...");
+      setSessionFormData({ sessionName: "", sessionFile: "" });
+      updateMessage(msgId, {
+        message: "Creating Session...",
+        state: "loading",
+      });
       const data = await postData(
         "/sessions",
         {
@@ -81,10 +89,17 @@ export default function CreateSessionForm() {
         token
       );
       const sessionId = data?.sessionId;
-      setLoadingText("Session Created Successfully!");
-      navigate("/teacher-dashboard");
+      updateMessage(msgId, {
+        message: "Session Created Successfully!",
+        state: "fulfilled",
+      });
     } catch (err) {
-      console.error(err.message || error);
+      updateMessage(msgId, {
+        message: `Error Creating session :${
+          err.message || error?.message || "Failed to create session"
+        }`,
+        state: "rejected",
+      });
       setErrorMsg(
         err.message ||
           error?.message ||
@@ -110,18 +125,6 @@ export default function CreateSessionForm() {
       </div>
 
       <form className="p-6 space-y-6 relative" onSubmit={handleSubmit}>
-        {/* Form-wide Loading Overlay */}
-        {isSubmitting && (
-          <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
-            <div className="text-center">
-              <Loader size="lg" variant="orbit" color="primary" />
-              <p className="mt-4 text-gray-700 font-medium animate-pulse">
-                {loadingText}
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* Error Message */}
         {errorMsg && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
@@ -151,7 +154,6 @@ export default function CreateSessionForm() {
             placeholder="Enter session name"
             value={sessionFormData.sessionName}
             onChange={handleSessionNameChange}
-            disabled={isSubmitting}
             className="w-full border rounded-md px-4 py-2 text-black border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
         </div>
@@ -160,10 +162,7 @@ export default function CreateSessionForm() {
           <label className="block text-sm font-medium text-gray-700 mb-3 text-start">
             Session Date & Time
           </label>
-          <DateTimePicker
-            onChange={handleDateTimeChange}
-            disabled={isSubmitting}
-          />
+          <DateTimePicker onChange={handleDateTimeChange} />
         </div>
 
         <div>
@@ -209,7 +208,6 @@ export default function CreateSessionForm() {
                 name="sessionFile"
                 id="sessionFile"
                 onChange={handleFileUpload}
-                disabled={isSubmitting}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
               />
               <div className="flex justify-center mb-2">
@@ -231,7 +229,6 @@ export default function CreateSessionForm() {
 
         <button
           type="submit"
-          disabled={isSubmitting}
           className="w-full bg-blue-600 text-white py-3 rounded-md flex justify-center items-center gap-2 hover:bg-blue-700 transition disabled:bg-blue-400 disabled:cursor-not-allowed"
         >
           <Lock className="w-4 h-4" />

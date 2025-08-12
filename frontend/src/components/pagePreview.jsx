@@ -5,10 +5,23 @@ const PagePreview = ({
   pageNumber = 1,
   storage_path,
   averageAttention = undefined,
+  setCurrentPage,
+  current,
 }) => {
   return (
     <>
-      <main className="flex flex-col w-full h-35 md:h-full rounded-md border border-neutral-30/50 shadow-sm/1 relative bg-neutral-10/10 rounded-t-md gap-3 min-h-0 max-w-70 max-h-45">
+      <main
+        aria-current={current ? "page" : undefined}
+        className={`flex flex-col w-full h-35 md:h-full rounded-md border shadow-sm/1 relative rounded-t-md gap-3 min-h-0 max-w-70 max-h-45 cursor-pointer transition
+          ${
+            current
+              ? "border-info-50 ring-2 ring-info-50 shadow-md bg-info-50/10"
+              : "border-neutral-30/50 bg-neutral-10/10"
+          }`}
+        onClick={() => {
+          setCurrentPage(pageNumber);
+        }}
+      >
         <p className="size-4 rounded-full text-sm m-1 text-neutral-10 absolute p-3 z-50 bg-black/30 flex justify-center items-center">
           {pageNumber}
         </p>

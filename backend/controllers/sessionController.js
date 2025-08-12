@@ -5,53 +5,64 @@ import { createSession as createSessionService } from "../models/session.js";
 import { deleteSession as deleteSessionService } from "../models/session.js";
 import { createSlide } from "../models/slide.js";
 import { createQuestion } from "../models/question.js";
+import { deleteFileFromStorage } from "../models/session.js";
 
 // Create a new session (teacher-only)
 export const createSession = async (req, res) => {
+  const { title, subject, dateTime, fileUrl } = req.body;
+
   try {
-    console.log("Request body:", req.body);
-
-    const { title, subject, dateTime, fileUrl } = req.body;
-
     if (!title || !subject) {
-      return res.status(400).json({ error: "Title and subject are required" });
+      const e = new Error("Title and subject are required");
+      e.statusCode = 400;
+      throw e;
     }
-    const teacherId = req.teacher.id;
-    const { data: sessionData, error } = await createSessionService({
-      title,
-      subject,
-      date: dateTime,
-      teacherId,
-    });
 
-    if (error) {
-      console.error("Session creation error:", error);
-      return res
-        .status(500)
-        .json({ error: `Error creating session: ${error.message}` });
+    const teacherId = req.teacher?.id;
+    if (!teacherId) {
+      const e = new Error("Unauthorized");
+      e.statusCode = 401;
+      throw e;
     }
+
+    const { data: sessionData, error: sessionError } =
+      await createSessionService({
+        title,
+        subject,
+        date: dateTime,
+        teacherId,
+      });
+    if (sessionError)
+      throw new Error(sessionError.message || "Failed to create session");
 
     const sessionId = sessionData?.[0]?.session_id;
+    if (!sessionId) throw new Error("Session ID missing after creation");
 
-    if (fileUrl && sessionId) {
-      const { data: slideData, error: slideError } = await createSlide(
+    if (fileUrl) {
+      const { error: slideError } = await createSlide(
         sessionId,
         title,
         fileUrl
       );
-
-      if (slideError) {
-        console.warn("Slide creation failed:", slideError.message);
-      }
+      if (slideError)
+        throw new Error(slideError.message || "Failed to create slide");
     }
 
-    res.status(201).json({
+    return res.status(201).json({
       sessionId,
       message: "Session created successfully",
     });
   } catch (err) {
+    // Delete uploaded file only on failure
+    if (fileUrl) {
+      await deleteFileFromStorage(fileUrl);
+    }
+
     console.error("Create session error:", err);
-    res.status(500).json({ error: "Failed to create session" });
+    const status = err?.statusCode || 500;
+    return res
+      .status(status)
+      .json({ error: err?.message || "Failed to create session" });
   }
 };
 

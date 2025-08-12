@@ -105,7 +105,7 @@ const AuthContextProvider = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       await supabase.auth.signOut();
-      navigate("/", { replace: true });
+      navigate("/");
     } catch (e) {
       console.error("Sign out failed:", e);
     }

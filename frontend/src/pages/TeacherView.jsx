@@ -246,7 +246,9 @@ const TeacherView = () => {
                   <PagePreview
                     key={index + 1}
                     pageNumber={index + 1}
+                    current={currentPage === index + 1}
                     storage_path={sessionData?.slides?.storage_path}
+                    setCurrentPage={setCurrentPage}
                   />
                 ))}
               </div>

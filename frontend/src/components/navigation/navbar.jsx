@@ -3,7 +3,21 @@ import Logo from "./logo";
 import { Menu, X } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { useAuthContext } from "../../context/auth-context";
-import { Search } from "lucide-react";
+import { Search, ChevronDown, User, Settings, LogOut } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const NavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -58,9 +72,9 @@ const NavBar = () => {
 };
 
 const UserBar = () => {
-  const { user } = useAuthContext();
+  const { user, logout } = useAuthContext();
   return (
-    <>
+    <DropdownMenu>
       <div className="hidden md:flex items-center  text-black">
         <Search className="ml-2 text-neutral-30 absolute size-5" />
         <input
@@ -76,8 +90,27 @@ const UserBar = () => {
           alt="User avatar"
         />
       </div>
-      <span className="text-sm text-gray-700 capitalize">{user?.name}</span>
-    </>
+      <DropdownMenuTrigger className="text-sm text-gray-700 capitalize flex gap-1 justify-center items-center">
+        {user?.name}
+        <ChevronDown className="size-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-48 pt-2 mt-2">
+        <DropdownMenuItem className="flex items-center gap-2">
+          <User />
+          My Profile
+        </DropdownMenuItem>
+        <DropdownMenuItem className="flex items-center gap-2">
+          <Settings />
+          Settings
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={logout} className="p-0">
+          <div className="flex items-center gap-2 w-full h-full p-2 rounded-sm  bg-warning-50 text-neutral-10 hover:bg-warning-50/80 cursor-pointer">
+            <LogOut className="text-neutral-10 hover:text-black" />
+            Logout
+          </div>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 

@@ -3,7 +3,7 @@ import AttentionTracker from "./pages/StudentCamera";
 import HomePage from "./pages/Homepage";
 
 import "./index.css";
-
+import AppMsg from "./components/appMsg";
 import ViewPage from "./pages/StudentView";
 import TeacherViewSession from "./pages/TeacherView";
 import Dashboard from "./pages/TeacherDashboard";
@@ -13,6 +13,7 @@ import JoinSessionPage from "./pages/joinsession";
 import AuthContextProvider from "./context/auth-context";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/protected-route";
+import { useAppContext } from "./context/state";
 
 import { pdfjs } from "react-pdf";
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -23,8 +24,19 @@ import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 
 function App() {
+  const { messages, removeMessage } = useAppContext();
   return (
     <>
+      <div className="fixed top-4 right-4 z-[1000] flex flex-col gap-2 items-end">
+        {messages.map((m) => (
+          <AppMsg
+            key={m.id}
+            message={m.message}
+            state={m.state}
+            onClose={() => removeMessage(m.id)}
+          />
+        ))}
+      </div>
       <Router>
         <AuthContextProvider>
           <Routes>
@@ -49,7 +61,7 @@ function App() {
                   <Dashboard />
                 </ProtectedRoute>
               }
-            />{" "}
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthContextProvider>

@@ -6,6 +6,8 @@ import { usePost } from "../hooks/api.js";
 import { useAuthContext } from "../context/auth-context.jsx";
 import { ButtonLoader } from "../components/loader.jsx";
 import { Link } from "react-router-dom";
+import { useAppContext } from "../context/state.jsx"; // added
+
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
     fullName: "",
@@ -16,6 +18,8 @@ const SignUpPage = () => {
   const [formError, setFormError] = useState("");
   const { loading, error, postData } = usePost();
   const { loginHandler } = useAuthContext();
+  const { addMessage, updateMessage } = useAppContext(); // added
+  const [isSubmitting, setIsSubmitting] = useState(false); // added
 
   useEffect(() => {
     const validateForm = () => {
@@ -42,6 +46,7 @@ const SignUpPage = () => {
         setFormError("Password must be at least 6 characters long");
         return false;
       }
+      setFormError(""); // clear when valid
     };
     const interval = setTimeout(() => {
       validateForm();
@@ -62,6 +67,18 @@ const SignUpPage = () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return; // prevent double-submit without blocking UI
+    setFormError("");
+    setIsSubmitting(true);
+
+    // use global message
+    const msgId = Date.now();
+    addMessage({
+      id: msgId,
+      state: "loading",
+      message: "Creating your account...",
+    });
+
     try {
       const result = await postData("/auth/register", {
         name: formData.fullName,
@@ -72,9 +89,24 @@ const SignUpPage = () => {
       const token = result?.token;
       const user = result?.teacher;
 
+      if (!token || !user) throw new Error("Invalid response from server");
+
+      updateMessage(msgId, {
+        state: "fulfilled",
+        message: "Account created! Signing you in...",
+      });
+
+      // proceed with auth
       loginHandler(user, token);
     } catch (err) {
-      setFormError(err.message);
+      const msg = err?.message || "Failed to create account";
+      setFormError(msg);
+      updateMessage(msgId, {
+        state: "rejected",
+        message: msg,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -105,7 +137,10 @@ const SignUpPage = () => {
             onSubmit={handleFormSubmit}
           >
             <div className="flex flex-col gap-1">
-              <label htmlFor="fullname" className="text-sm font-medium text-neutral-90">
+              <label
+                htmlFor="fullname"
+                className="text-sm font-medium text-neutral-90"
+              >
                 Full Name
               </label>
               <input
@@ -117,12 +152,15 @@ const SignUpPage = () => {
                 onChange={handleInputChange}
                 className="w-full border border-neutral-30 text-black rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-blue-40 transition-all duration-200"
                 required
-                disabled={loading}
+                // removed disabled={loading}
               />
             </div>
 
             <div className="flex flex-col gap-1">
-              <label htmlFor="email" className="text-sm font-medium text-neutral-90">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium text-neutral-90"
+              >
                 Email Address
               </label>
               <input
@@ -134,7 +172,7 @@ const SignUpPage = () => {
                 onChange={handleInputChange}
                 className="w-full border border-neutral-30 text-black rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary-blue-40 transition-all duration-200"
                 required
-                disabled={loading}
+                // removed disabled={loading}
               />
             </div>
 
@@ -145,7 +183,7 @@ const SignUpPage = () => {
               value={formData.password}
               onChange={handleInputChange}
               placeholder="••••••••"
-              disabled={loading}
+              // removed disabled={loading}
               required
             />
 
@@ -156,20 +194,21 @@ const SignUpPage = () => {
               value={formData.confirmPassword}
               onChange={handleInputChange}
               placeholder="••••••••"
-              disabled={loading}
+              // removed disabled={loading}
               required
             />
 
             <button
               type="submit"
-              disabled={loading}
+              // keep enabled to avoid blocking UI
               className={`w-full rounded-lg p-3 font-medium transition-colors duration-200 mt-2 flex items-center justify-center gap-2 ${
-                loading
-                  ? "bg-neutral-40 text-neutral-70 cursor-not-allowed"
-                  : "bg-primary-blue-40 text-white hover:bg-primary-blue-50 cursor-pointer"
+                isSubmitting
+                  ? "bg-neutral-40 text-neutral-70"
+                  : "bg-primary-blue-40 text-white hover:bg-primary-blue-50"
               }`}
+              aria-busy={isSubmitting ? "true" : "false"}
             >
-              {loading ? (
+              {isSubmitting ? (
                 <>
                   <ButtonLoader variant="dots" size="sm" />
                   <span>Creating account...</span>

@@ -6,7 +6,19 @@ export const createSession = async ({ title, subject, teacherId, date }) => {
     .select();
   return { data, error };
 };
-
+export async function deleteFileFromStorage(fileUrl) {
+  try {
+    const path = fileUrl.split("/sessionfiles/")[1];
+    const { error } = await supabase.storage
+      .from("sessionfiles")
+      .remove([path]);
+    if (error) {
+      console.error("Failed to delete file from storage:", error.message);
+    }
+  } catch (err) {
+    console.error("Error in deleteFileFromStorage:", err.message);
+  }
+}
 export const getSessionById = async (id) => {
   const { data, error } = await supabase
     .from("sessions")

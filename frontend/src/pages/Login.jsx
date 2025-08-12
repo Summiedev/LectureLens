@@ -5,7 +5,8 @@ import { useState } from "react";
 import { useAuthContext } from "../context/auth-context.jsx";
 import { usePost } from "../hooks/api.js";
 import { Link } from "react-router-dom";
-import { ButtonLoader } from "../components/Loader.jsx";
+import { ButtonLoader } from "../components/loader.jsx";
+import { useAppContext } from "../context/state.jsx";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -14,6 +15,8 @@ const Login = () => {
   });
   const { loading, error, postData } = usePost();
   const { loginHandler } = useAuthContext();
+
+  const { addMessage, updateMessage } = useAppContext();
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -25,20 +28,41 @@ const Login = () => {
   };
 
   const handleFormSubmit = async () => {
+    const msgId = new Date().getTime();
     try {
+      if (!formData.email || !formData.password) {
+        addMessage({
+          id: new Date().getTime(),
+          state: "rejected",
+          message: "Email and password are required.",
+        });
+        return;
+      }
+
+      addMessage({
+        id: msgId,
+        state: "loading",
+        message: "Logging in...",
+      });
       const result = await postData("/auth/login", {
         email: formData.email,
         password: formData.password,
       });
       const session = result?.session;
       const user = result?.teacher;
-
       if (!session || !user) {
         throw new Error("Invalid response from server");
       }
       loginHandler(session);
+      updateMessage(msgId, {
+        state: "fulfilled",
+        message: "Login successful!",
+      });
     } catch (err) {
-      console.log(error || err.message);
+      updateMessage(msgId, {
+        state: "rejected",
+        message: err.message ?? "An error occurred during login.",
+      });
     }
   };
 
