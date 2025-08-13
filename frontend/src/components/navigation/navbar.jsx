@@ -32,7 +32,10 @@ const NavBar = () => {
     <>
       <div className="w-full bg-neutral-10 shadow-sm">
         <div className="flex justify-between items-center p-2 sm:p-4 h-[70px]">
-          <Logo />
+          <Link to="/" className="">
+            <Logo />
+          </Link>
+
           {/* conditionally show buttons on props passed */}
           <div className="flex items-center gap-3">
             {pathName === "/" && !isLoggedIn && <AuthButtons isOpen={isOpen} />}
@@ -40,11 +43,11 @@ const NavBar = () => {
             {(pathName === "/" || pathName.startsWith("/teacher-dashboard")) &&
               isLoggedIn && <UserBar />}
 
-            {(pathName === "/SignUp" || pathName === "/login") && (
+            {(pathName === "/signup" || pathName === "/login") && (
               <JoinSession />
             )}
 
-            {pathName === "/Join" && (
+            {pathName === "/join" && (
               <Link
                 to="/"
                 className="text-primary-blue-40 hover:text-primary-blue-50"

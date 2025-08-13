@@ -50,7 +50,7 @@ const DashboardPage = () => {
         <div className="w-full h-full flex items-center justify-center py-16">
           <Loader
             size="lg"
-            variant="orbit"
+            variant="pulse"
             color="primary"
             text="Loading your sessions..."
           />

@@ -38,10 +38,6 @@ const TeacherView = () => {
     };
     fetchData();
   }, [token]);
-  useEffect(() => {
-    setHeight(window.innerHeight * 0.64);
-  }, [window.innerHeight]);
-
   const handleCopy = () => {
     navigator.clipboard.writeText(sessionId);
     setIsCopied(true);
@@ -135,8 +131,8 @@ const TeacherView = () => {
             >
               <Page
                 pageNumber={currentPage}
-                renderAnnotationLayer={false}
-                renderTextLayer={false}
+                renderAnnotationLayer={true}
+                renderTextLayer={true}
                 className="
                    grid place-items-center rounded-md
                   [&_canvas]:max-w-full [&_canvas]:max-h-full

@@ -1,47 +1,87 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import FastFocusTracker from "./StudentCamera";
+import { useAuthContext } from "../context/auth-context";
+import { useGet } from "../hooks/api";
 import { Camera, EyeOff } from "lucide-react";
+import { useParams } from "react-router-dom";
+import { format } from "date-fns";
+import { Document, Page } from "react-pdf";
+import { Skeleton } from "@/components/ui/skeleton";
+
 import HeroSection from "../assets/presentation screen.png";
 import { io } from "socket.io-client";
-// import PDFSlideViewer from "../components/pdfViewer";
 
-// const socket = io('http://localhost:5000'); // adjust host:port
+const formatSessionDate = (dateObj) => {
+  if (!dateObj) return "No date";
+
+  try {
+    const date = new Date(dateObj);
+    return format(date, "MMMM dd, yyyy | hh:mm aa");
+  } catch (error) {
+    return "Invalid date";
+  }
+};
 
 export default function StudentViewPage() {
+  const { token } = useAuthContext();
+  const { loading, error, getData } = useGet();
   const [showTrackerUI, setShowTrackerUI] = useState(true);
   const [slideIndex, setSlideIndex] = useState(0);
-  const [participantUuid, setParticipantUuid] = useState(null);
-  const sessionId = "123456"; // replace with route param or context
+  const [numPages, setNumpages] = useState(undefined);
+  const [currentPage, setCurrentPage] = useState(6);
+  const [participantUuid, setParticipantUuid] = useState(
+    () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  );
+  const [sessionData, setSessionData] = useState(null);
+  const { session_id: sessionId } = useParams();
+  const [height, setHeight] = useState(window.innerHeight * 0.64);
 
-  // 1️⃣ Join session on mount
   useEffect(() => {
-    async function join() {
+    const fetchData = async () => {
       try {
-        const res = await fetch("/api/sessions/join", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionCode: sessionId,
-            name: "Laila Oreoluwa",
-          }),
-        });
-        const { participantUuid: uuid } = await res.json();
-        setParticipantUuid(uuid);
-
-        // then join socket room
-        socket.emit("joinSession", { sessionId, role: "student" });
-        socket.on("slideChange", ({ slideIndex }) => {
-          setSlideIndex(slideIndex);
-        });
-      } catch (err) {
-        console.error("Join session failed", err);
+        const { session } = await getData(`/sessions/${sessionId}`, token);
+        setSessionData(session);
+      } catch (error) {
+        console.error("Error fetching session data:", error);
       }
-    }
-    join();
-    return () => {
-      socket.off("slideChange");
     };
-  }, [sessionId]);
+    if (sessionId && token) fetchData();
+  }, [token, sessionId]);
+  const onLoadSuccess = (pdf) => {
+    const { numPages } = pdf?._pdfInfo;
+    setNumpages(numPages);
+    setCurrentPage((p) => Math.min(Math.max(1, p), numPages));
+  };
+
+  // // 1️⃣ Join session on mount
+  // useEffect(() => {
+  //   async function join() {
+  //     try {
+  //       const res = await fetch("/api/sessions/join", {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({
+  //           sessionCode: sessionId,
+  //           name: "Laila Oreoluwa",
+  //         }),
+  //       });
+  //       const { participantUuid: uuid } = await res.json();
+  //       setParticipantUuid(uuid);
+
+  //       // then join socket room
+  //       socket.emit("joinSession", { sessionId, role: "student" });
+  //       socket.on("slideChange", ({ slideIndex }) => {
+  //         setSlideIndex(slideIndex);
+  //       });
+  //     } catch (err) {
+  //       console.error("Join session failed", err);
+  //     }
+  //   }
+  //   join();
+  //   return () => {
+  //     socket.off("slideChange");
+  //   };
+  // }, [sessionId]);
 
   // 2️⃣ Leave session handler
   const leaveSession = async () => {
@@ -51,59 +91,89 @@ export default function StudentViewPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ participantUuid }),
     });
-    // redirect or cleanup...
   };
 
   return (
-    <div className="min-h-screen flex flex-col p-6 bg-gray-100 text-gray-900">
-      {/* Header */}
-      <header className="bg-white rounded-b-md shadow p-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">
-            Histology of the Gallbladder
-          </h1>
-          <p className="text-sm text-gray-500">June 12th, 2025 | 11:00 AM</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="font-medium">Laila Oreoluwa</p>
-            <p className="text-sm text-red-600">Inattentive</p>
+    <>
+      <div className="min-h-screen flex flex-col p-2 md:p-4 bg-gray-100 text-gray-900 gap-3">
+        {/* Header */}
+        <header className="bg-white rounded-md shadow-md/1 p-4 flex items-center justify-between">
+          <div>
+            {loading ? (
+              <>
+                <Skeleton className="h-6 w-50" />
+                <Skeleton className="h-4 w-45 mt-1" />
+              </>
+            ) : (
+              <>
+                <h1 className="text-xl font-semibold capitalize">
+                  {sessionData?.title ?? "Title"}
+                </h1>
+                <p className="text-sm text-gray-500">
+                  {formatSessionDate(sessionData?.date) ??
+                    "June 16, 2025 | 12:00 AM"}
+                </p>
+              </>
+            )}
           </div>
-          <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-sm">
-            9 points
-          </span>
-          <img
-            src="https://randomuser.me/api/portraits/women/1.jpg"
-            alt="Laila Oreoluwa"
-            className="w-10 h-10 rounded-full object-cover"
-          />
+
+          <div className="flex items-center gap-4">
+            <img
+              src="https://randomuser.me/api/portraits/women/1.jpg"
+              alt="Laila Oreoluwa"
+              className="w-10 h-10 rounded-full object-cover"
+            />
+            <div className="text-right flex gap-2 rounded-sm px-4 py-2 bg-neutral-30/15 items-center justify-evenly h-10">
+              <p className="font-medium">Laila Oreoluwa</p>
+              <span className="w-[2px] h-full border-1 bg-neutral-70"></span>
+              <span className="text-green-500 text-sm">9 points</span>
+              <span className="w-[2px] h-full border-1 bg-neutral-70"></span>
+              <p className="text-sm text-red-600 flex items-center gap-1">
+                <span className="bg-red-600 size-4 rounded-full"></span>
+                Inattentive
+              </p>
+            </div>
+          </div>
+        </header>
+        {/* Slide viewer */}
+        <div className="shadow-md/1 bg-neutral-30/30 rounded-sm w-full h-[80vh] md:h-[80%] overflow-hidden relative flex items-center justify-center">
+          {loading ? (
+            <Skeleton className=" w-full h-90 bg-neutral-50" />
+          ) : (
+            <Document
+              file={sessionData?.slides?.storage_path}
+              onLoadSuccess={onLoadSuccess}
+              loading={
+                <Skeleton className="flex-1 w-full h-full overflow-hidden grid place-items-center rounded-md" />
+              }
+              className="flex-1 w-full h-full overflow-hidden grid place-items-center"
+            >
+              <Page
+                pageNumber={currentPage}
+                renderAnnotationLayer={true}
+                renderTextLayer={true}
+                className="
+                  grid place-items-center rounded-md
+                  [&_canvas]:max-w-full [&_canvas]:max-h-full
+                  [&_canvas]:!w-auto [&_canvas]:!h-auto
+                  [&_canvas]:object-contain [&_canvas]:block
+                  [&_canvas]:m-auto
+                "
+                height={height}
+              />
+            </Document>
+          )}
         </div>
-      </header>
 
-      {/* Main */}
-      <main className="flex-1 p-6 flex flex-col items-center relative">
-        {/* PDF Viewer or placeholder */}
-        <div className="w-full max-w-4xl h-[600px] overflow-auto mb-6">
-          {/* Replace with a PDF.js viewer switching pages by slideIndex 
-          {/*  <img
-            src={HeroSection}
-            alt={`Slide ${slideIndex + 1}`}
-            csName="w-full h-full object-contain"
-          />las
-        </div>
-
-       Leave */}
-
-          <PDFSlideViewer file={samplePDF} slideIndex={slideIndex} />
-        </div>
-        <button
-          onClick={leaveSession}
-          className="bg-red-500 text-white w-full font-semibold px-6 py-5 rounded shadow hover:bg-red-600 mb-6"
-        >
-          Leave session
-        </button>
-
-        {/* Focus Tracker */}
+        {/* Main */}
+        <main className="flex-1 px-4 py-2 flex flex-col items-center relative gap-2">
+          <button
+            onClick={leaveSession}
+            className="bg-warning-50 text-white w-1/2 font-semibold px-4 py-2 ring-3 ring-warning-50/50 rounded shadow hover:bg-warning-50/80 cursor-pointer  mb-6"
+          >
+            Leave session
+          </button>
+        </main>
         <div className="fixed bottom-4 right-4 z-50">
           <button
             onClick={() => setShowTrackerUI(!showTrackerUI)}
@@ -116,7 +186,7 @@ export default function StudentViewPage() {
               <Camera className="w-5 h-5" />
             )}
           </button>
-          {showTrackerUI && participantUuid && (
+          {showTrackerUI && (
             <FastFocusTracker
               sessionId={sessionId}
               studentUUID={participantUuid}
@@ -124,19 +194,17 @@ export default function StudentViewPage() {
             />
           )}
         </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="text-center py-4 text-sm text-gray-500 border-t">
-        &copy; 2025 LectureLens. All rights reserved.{" "}
-        <a href="#" className="underline">
-          Privacy Policy
-        </a>{" "}
-        &amp;{" "}
-        <a href="#" className="underline">
-          Terms of Service
-        </a>
-      </footer>
-    </div>
+        <footer className="text-center py-4 text-sm text-gray-500 border-t">
+          &copy; 2025 LectureLens. All rights reserved.{" "}
+          <a href="#" className="underline">
+            Privacy Policy
+          </a>{" "}
+          &amp;{" "}
+          <a href="#" className="underline">
+            Terms of Service
+          </a>
+        </footer>
+      </div>
+    </>
   );
 }

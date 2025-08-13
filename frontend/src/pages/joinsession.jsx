@@ -1,6 +1,13 @@
 import NavBar from "../components/navigation/navbar";
 import Footer from "../components/footer";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 const JoinSessionPage = () => {
+  const [sessionId, setSessionId] = useState("");
+  const navigate = useNavigate();
+  const joinSession = () => {
+    navigate(`/student/${sessionId}`);
+  };
   return (
     <div className="bg-neutral-10 bg-[url('/src/assets/background.png')] bg-cover bg-center bg-no-repeat min-h-screen text-black">
       <NavBar />
@@ -22,11 +29,18 @@ const JoinSessionPage = () => {
             <input
               type="text"
               id="session-id"
+              value={sessionId}
+              onChange={(e) => {
+                setSessionId(e.target.value);
+              }}
               placeholder="Enter Session Code"
               className="border border-neutral-30 bg-neutral-10 rounded-md px-3 py-2 mb-3"
             />
           </div>
-          <button className="w-full bg-primary-blue-40 text-neutral-10 font-semibold py-2 rounded-md cursor-pointer hover:bg-primary-blue-50 transition-colors duration-200">
+          <button
+            className="w-full bg-primary-blue-40 text-neutral-10 font-semibold py-2 rounded-md cursor-pointer hover:bg-primary-blue-50 transition-colors duration-200"
+            onClick={joinSession}
+          >
             Join a session
           </button>
         </div>

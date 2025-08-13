@@ -46,6 +46,7 @@ function App() {
             <Route path="/Join" element={<JoinSessionPage />} />
             <Route path="/Camera" element={<AttentionTracker />} />
             <Route path="/Student" element={<ViewPage />} />
+            <Route path="/Student/:session_id" element={<ViewPage />} />
             <Route
               path="/session/:session_id"
               element={
