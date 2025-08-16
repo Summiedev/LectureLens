@@ -121,6 +121,26 @@ export const deleteSession = async (req, res) => {
 //   res.json({ success: true, slideData: data });
 // };
 
+export const startSession = async (req, res) => {
+  const { sessionId } = req.params;
+  const { timestamp } = req.body;
+
+  try {
+    const { error } = await supabase
+      .from("sessions")
+      .update({ started_at: new Date(timestamp) })
+      .eq("session_id", sessionId);
+    if (error) throw error;
+
+    res.status(200).json({
+      success: true,
+    });
+  } catch (err) {
+    console.error("❌ Start session failed:", err.message);
+    res.status(500).json({ error: "Start session failed" });
+  }
+};
+
 export const uploadSlides = async (req, res) => {
   const { sessionId } = req.params;
   const { title, pdfUrl, slideQuestions } = req.body;
@@ -401,12 +421,12 @@ export const leaveSession = async (req, res) => {
 
   const { error } = await supabase
     .from("participants")
-    .update({ left: true })
+    .update({ left_at: new Date() })
     .eq("session_id", sessionId)
     .eq("uuid", participantUuid);
 
   if (error) return res.status(500).json({ error: error.message });
-  res.json({ message: "Participant marked as left" });
+  res.json({ success: "Participant marked as left" });
 };
 
 export const getDashboardSummary = async (req, res) => {

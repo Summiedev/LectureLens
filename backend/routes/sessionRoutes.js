@@ -6,6 +6,7 @@ import {
   addQuestions,
   getAnalytics,
   joinSession,
+  startSession,
   getSessionByID,
   logAttention,
   getQuiz,
@@ -32,6 +33,7 @@ router.patch(
   addQuestions
 );
 router.get("/:sessionId/analytics", verifyToken, getAnalytics);
+router.post("/:sessionId/start", verifyToken, startSession);
 router.delete("/:id", verifyToken, deleteSession);
 // Public (students)
 router.post("/join", joinSession);
@@ -40,7 +42,7 @@ router.get("/:sessionId/quiz", getQuiz);
 router.post("/:sessionId/quiz", submitQuiz);
 
 router.get("/", verifyToken, listSessions);
-router.get("/:sessionId", verifyToken, getSessionByID);
+router.get("/:sessionId", getSessionByID);
 router.get("/:sessionId/slides", verifyToken, getSlides);
 
 router.get("/slides/:slideId/questions", verifyToken, getSlideQuestions);

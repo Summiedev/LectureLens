@@ -3,6 +3,7 @@ import "@tensorflow/tfjs-backend-webgl";
 import * as tf from "@tensorflow/tfjs-core";
 import * as blazeface from "@tensorflow-models/blazeface";
 import * as fld from "@tensorflow-models/face-landmarks-detection";
+import { usePost } from "../hooks/api";
 
 export default function FastFocusTracker({
   sessionId,
@@ -14,7 +15,7 @@ export default function FastFocusTracker({
   const [blaze, setBlaze] = useState();
   const [detector, setDetector] = useState();
   const [debug, setDebug] = useState({ status: "init", face: false, focus: 0 });
-
+  const { postData } = usePost();
   canvasRef.current.width = 256;
   canvasRef.current.height = 256;
 
@@ -32,6 +33,18 @@ export default function FastFocusTracker({
       }
     })();
   }, []);
+  useEffect(() => {
+    if (sessionId && debug.face) {
+      try {
+        postData(`/sessions/${sessionId}/attention`, {
+          participantUuid: studentUUID,
+          slideIndex,
+          attentionScore: debug.focus,
+          timestamp: Date.now(),
+        });
+      } catch (error) {}
+    }
+  }, [debug.focus]);
 
   // load models
   useEffect(() => {
@@ -102,20 +115,6 @@ export default function FastFocusTracker({
         // combine
         const focus = Math.round((areaRatio * 0.5 + poseScore * 0.5) * 100);
         setDebug({ status: "face-detected", face: true, focus });
-
-        // POST backend
-        if (sessionId) {
-          // fetch(`/api/sessions/${sessionId}/attention`, {
-          //   method: "POST",
-          //   headers: { "Content-Type": "application/json" },
-          //   body: JSON.stringify({
-          //     studentUUID,
-          //     slideIndex,
-          //     attentionScore: focus / 100,
-          //     timestamp: Date.now(),
-          //   }),
-          // }).catch(console.error);
-        }
       }
 
       setTimeout(detect, 1000);

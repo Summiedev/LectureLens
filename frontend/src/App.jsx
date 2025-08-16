@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import AttentionTracker from "./pages/StudentCamera";
 import HomePage from "./pages/Homepage";
-
+import { useState } from "react";
 import "./index.css";
 import AppMsg from "./components/appMsg";
 import ViewPage from "./pages/StudentView";
@@ -25,6 +25,7 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 
 function App() {
   const { messages, removeMessage } = useAppContext();
+  const [name, setName] = useState("");
   return (
     <>
       <div className="fixed top-4 right-4 z-[1000] flex flex-col gap-2 items-end">
@@ -43,10 +44,16 @@ function App() {
             <Route path="/" element={<HomePage />} exact />
             <Route path="/SignUp" element={<SignUpPage />} />
             <Route path="/Login" element={<LoginPage />} />
-            <Route path="/Join" element={<JoinSessionPage />} />
+            <Route
+              path="/Join"
+              element={<JoinSessionPage setName={setName} name={name} />}
+            />
             <Route path="/Camera" element={<AttentionTracker />} />
-            <Route path="/Student" element={<ViewPage />} />
-            <Route path="/Student/:session_id" element={<ViewPage />} />
+            {/* <Route path="/Student" element={<ViewPage />} /> */}
+            <Route
+              path="/Student/:session_id"
+              element={<ViewPage name={name} />}
+            />
             <Route
               path="/session/:session_id"
               element={

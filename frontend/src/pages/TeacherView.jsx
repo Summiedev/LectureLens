@@ -3,17 +3,22 @@ import PagePreview from "../components/pagePreview";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useGet } from "../hooks/api";
+import { useGet, usePost } from "../hooks/api";
 import { useAuthContext } from "../context/auth-context";
 import { Document, Page } from "react-pdf";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAppContext } from "../context/state";
 import SessionHeader from "../components/sessionHeader";
+import { io } from "socket.io-client";
+
+const socket = io("http://localhost:5000");
 
 const TeacherView = () => {
   const navigate = useNavigate();
   const { token } = useAuthContext();
   const { session_id: sessionId } = useParams();
   const { loading, error, getData } = useGet();
+  const { error: postError, postData } = usePost();
   const [sessionData, setSessionData] = useState(null);
   const [numPages, setNumpages] = useState(undefined);
   const [currentPage, setCurrentPage] = useState(1);
@@ -21,6 +26,7 @@ const TeacherView = () => {
   const [showControls, setShowControls] = useState(false);
   const [height, setHeight] = useState(window.innerHeight * 0.64);
 
+  const { addMessage, updateMessage } = useAppContext();
   const hideTimerRef = useRef(null);
   const isCoarsePointer =
     typeof window !== "undefined" && window.matchMedia
@@ -28,12 +34,41 @@ const TeacherView = () => {
       : false;
 
   useEffect(() => {
+    socket.emit("slideChange", {
+      sessionId: sessionId,
+      slideIndex: currentPage,
+    });
+    return () => {
+      socket.off("slideChange");
+    };
+  }, [currentPage]);
+
+  // fetch data on component mount and start session
+  useEffect(() => {
     const fetchData = async () => {
+      const msgId = new Date().getTime();
       try {
+        addMessage({
+          id: msgId,
+          state: "loading",
+          message: "Starting session...",
+        });
         const { session } = await getData(`/sessions/${sessionId}`, token);
+        await postData(
+          `/sessions/${sessionId}/start`,
+          { timestamp: Date.now() },
+          token
+        );
+        updateMessage(msgId, {
+          state: "fulfilled",
+          message: "Session started successfully",
+        });
         setSessionData(session);
       } catch (error) {
-        console.error("Error fetching session data:", error);
+        updateMessage(msgId, {
+          state: "rejected",
+          message: "Error starting session",
+        });
       }
     };
     fetchData();
@@ -58,6 +93,7 @@ const TeacherView = () => {
     hideTimerRef.current = setTimeout(() => setShowControls(false), 2500);
   }, []);
 
+  // change height dynamically
   useEffect(() => {
     revealControlsTemporarily();
     return () => {
@@ -169,7 +205,7 @@ const TeacherView = () => {
                 disabled={!numPages}
                 onClick={goPrev}
                 className={`shrink-0 inline-flex items-center justify-center rounded-full
-                  bg-neutral-950/70 text-white hover:bg-neutral-900/80
+                  bg-neutral-950/70 text-white hover:bg-neutral-900/80 z-50 cursor-pointer
                   shadow-md backdrop-blur
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600
                   size-9 md:size-10 transition transform active:scale-95
@@ -184,7 +220,7 @@ const TeacherView = () => {
                 onClick={goNext}
                 className={`shrink-0 inline-flex items-center justify-center rounded-full
                   bg-neutral-950/70 text-white hover:bg-neutral-900/80
-                  shadow-md backdrop-blur
+                  shadow-md backdrop-blur z-50 cursor-pointer
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600
                   size-9 md:size-10 transition transform active:scale-95
                   disabled:opacity-50 disabled:cursor-not-allowed`}

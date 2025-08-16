@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import FastFocusTracker from "./StudentCamera";
 import { useAuthContext } from "../context/auth-context";
-import { useGet } from "../hooks/api";
+import { useGet, usePost } from "../hooks/api";
 import { Camera, EyeOff } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { Document, Page } from "react-pdf";
+import { useAppContext } from "../context/state";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import HeroSection from "../assets/presentation screen.png";
 import { io } from "socket.io-client";
 
 const formatSessionDate = (dateObj) => {
@@ -22,66 +22,77 @@ const formatSessionDate = (dateObj) => {
   }
 };
 
-export default function StudentViewPage() {
+const socket = io("http://localhost:5000");
+
+export default function StudentViewPage({ name }) {
   const { token } = useAuthContext();
-  const { loading, error, getData } = useGet();
+  const navigate = useNavigate();
+  const { loading, getData } = useGet();
+  const { loading: postLoading, error: postError, postData } = usePost();
   const [showTrackerUI, setShowTrackerUI] = useState(true);
-  const [slideIndex, setSlideIndex] = useState(0);
   const [numPages, setNumpages] = useState(undefined);
-  const [currentPage, setCurrentPage] = useState(6);
+  const [currentPage, setCurrentPage] = useState(1);
   const [participantUuid, setParticipantUuid] = useState(
     () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
   );
+  const { addMessage } = useAppContext();
   const [sessionData, setSessionData] = useState(null);
   const { session_id: sessionId } = useParams();
   const [height, setHeight] = useState(window.innerHeight * 0.64);
 
+  // fetch session data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { session } = await getData(`/sessions/${sessionId}`, token);
+        const { session } = await getData(`/sessions/${sessionId}`);
+        const { started_at } = session;
+        if (!started_at) {
+          addMessage({
+            state: "rejected",
+            id: Date.now,
+            message: "Session has not started yet.",
+          });
+          return;
+        }
         setSessionData(session);
+        const { current_page } = session;
+        setCurrentPage(current_page);
       } catch (error) {
         console.error("Error fetching session data:", error);
       }
     };
-    if (sessionId && token) fetchData();
+    if (sessionId) fetchData();
   }, [token, sessionId]);
+
   const onLoadSuccess = (pdf) => {
     const { numPages } = pdf?._pdfInfo;
     setNumpages(numPages);
     setCurrentPage((p) => Math.min(Math.max(1, p), numPages));
   };
+  // join session
+  useEffect(() => {
+    async function join() {
+      try {
+        const { participantUuid: uuid } = await postData("/sessions/join", {
+          sessionCode: sessionId,
+          name: name,
+        });
 
-  // // 1️⃣ Join session on mount
-  // useEffect(() => {
-  //   async function join() {
-  //     try {
-  //       const res = await fetch("/api/sessions/join", {
-  //         method: "POST",
-  //         headers: { "Content-Type": "application/json" },
-  //         body: JSON.stringify({
-  //           sessionCode: sessionId,
-  //           name: "Laila Oreoluwa",
-  //         }),
-  //       });
-  //       const { participantUuid: uuid } = await res.json();
-  //       setParticipantUuid(uuid);
+        setParticipantUuid(uuid);
 
-  //       // then join socket room
-  //       socket.emit("joinSession", { sessionId, role: "student" });
-  //       socket.on("slideChange", ({ slideIndex }) => {
-  //         setSlideIndex(slideIndex);
-  //       });
-  //     } catch (err) {
-  //       console.error("Join session failed", err);
-  //     }
-  //   }
-  //   join();
-  //   return () => {
-  //     socket.off("slideChange");
-  //   };
-  // }, [sessionId]);
+        socket.emit("joinSession", { sessionId, role: "student" });
+        socket.on("slideChange", ({ slideIndex }) => {
+          setCurrentPage(slideIndex);
+        });
+      } catch (err) {
+        console.error("Join session failed", err);
+      }
+    }
+    join();
+    return () => {
+      socket.off("slideChange");
+    };
+  }, [sessionId]);
 
   // 2️⃣ Leave session handler
   const leaveSession = async () => {
@@ -91,6 +102,7 @@ export default function StudentViewPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ participantUuid }),
     });
+    navigate("/");
   };
 
   return (
@@ -124,7 +136,7 @@ export default function StudentViewPage() {
               className="w-10 h-10 rounded-full object-cover"
             />
             <div className="text-right flex gap-2 rounded-sm px-4 py-2 bg-neutral-30/15 items-center justify-evenly h-10">
-              <p className="font-medium">Laila Oreoluwa</p>
+              <p className="font-medium">{name}</p>
               <span className="w-[2px] h-full border-1 bg-neutral-70"></span>
               <span className="text-green-500 text-sm">9 points</span>
               <span className="w-[2px] h-full border-1 bg-neutral-70"></span>
@@ -190,7 +202,7 @@ export default function StudentViewPage() {
             <FastFocusTracker
               sessionId={sessionId}
               studentUUID={participantUuid}
-              slideIndex={slideIndex}
+              slideIndex={currentPage}
             />
           )}
         </div>

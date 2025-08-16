@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useAppContext } from "../context/state";
 
 // Base API configuration
 const API_BASE_URL = "http://localhost:5000/api";
@@ -36,9 +37,8 @@ export const useGet = () => {
       setData(responseData);
       return responseData;
     } catch (error) {
-      console.error(error);
       setError(error.message);
-      throw new Error(error.message);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -50,7 +50,6 @@ export const usePost = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const postData = useCallback(
     async (url, body, token = null, options = {}) => {
       try {
@@ -82,7 +81,6 @@ export const usePost = () => {
         setData(responseData);
         return responseData;
       } catch (error) {
-        console.error(error);
         setError(error.message);
         throw new Error(error.message);
       } finally {

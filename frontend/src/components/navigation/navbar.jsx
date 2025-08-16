@@ -56,7 +56,7 @@ const NavBar = () => {
               </Link>
             )}
           </div>
-          {pathName === "/" && (
+          {pathName === "/" && !isLoggedIn && (
             <button
               onClick={toggleMenu}
               className="md:hidden p-2 rounded-md hover:bg-neutral-30 transition-colors duration-200"

@@ -1,12 +1,26 @@
 import NavBar from "../components/navigation/navbar";
+import { useAppContext } from "../context/state";
 import Footer from "../components/footer";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-const JoinSessionPage = () => {
+import { add } from "date-fns";
+const JoinSessionPage = ({ name, setName }) => {
   const [sessionId, setSessionId] = useState("");
+  const { addMessage, updateMessage } = useAppContext();
   const navigate = useNavigate();
   const joinSession = () => {
-    navigate(`/student/${sessionId}`);
+    const msgId = new Date().getTime();
+    try {
+      if (!name) throw new Error("Name is required");
+      if (!sessionId) throw new Error("Session ID is required");
+      navigate(`/student/${sessionId}`);
+    } catch (error) {
+      addMessage({
+        id: msgId,
+        state: "rejected",
+        message: error.message,
+      });
+    }
   };
   return (
     <div className="bg-neutral-10 bg-[url('/src/assets/background.png')] bg-cover bg-center bg-no-repeat min-h-screen text-black">
@@ -26,6 +40,17 @@ const JoinSessionPage = () => {
             >
               Enter Session Code
             </label>
+
+            <input
+              type="text"
+              id="name"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+              }}
+              placeholder="Enter your name.."
+              className="border border-neutral-30 bg-neutral-10 rounded-md px-3 py-2 mb-3"
+            />
             <input
               type="text"
               id="session-id"
