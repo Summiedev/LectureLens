@@ -12,19 +12,21 @@ import SessionHeader from "../components/sessionHeader";
 import { io } from "socket.io-client";
 
 const socket = io("http://localhost:5000");
-
+const height = window.innerHeight * 0.64;
 const TeacherView = () => {
   const navigate = useNavigate();
   const { token } = useAuthContext();
   const { session_id: sessionId } = useParams();
   const { loading, error, getData } = useGet();
-  const { error: postError, postData } = usePost();
+  const { postData } = usePost();
   const [sessionData, setSessionData] = useState(null);
   const [numPages, setNumpages] = useState(undefined);
   const [currentPage, setCurrentPage] = useState(1);
+  const [avgAttentionByPage, setAvgAttentionByPage] = useState([]);
+  // { page : 1 , avg_attention : 89}
+  const [prevPage, setPrevPage] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
   const [showControls, setShowControls] = useState(false);
-  const [height, setHeight] = useState(window.innerHeight * 0.64);
 
   const { addMessage, updateMessage } = useAppContext();
   const hideTimerRef = useRef(null);
@@ -34,16 +36,32 @@ const TeacherView = () => {
       : false;
 
   useEffect(() => {
+    socket.on("pageAverageAttention", ({ page, avgAttention }) => {
+      setAvgAttentionByPage((prev) => {
+        const i = prev.findIndex((p) => p.page === page);
+        if (i === -1) return [...prev, { page, avgAttention }];
+        const copy = prev.slice();
+        copy[i] = { page, avgAttention };
+        return copy;
+      });
+    });
+    return () => {
+      socket.off("pageAverageAttention");
+    };
+  }, []);
+
+  useEffect(() => {
     socket.emit("slideChange", {
       sessionId: sessionId,
       slideIndex: currentPage,
+      previousSlideIndex: prevPage,
     });
+
     return () => {
       socket.off("slideChange");
     };
   }, [currentPage]);
 
-  // fetch data on component mount and start session
   useEffect(() => {
     const fetchData = async () => {
       const msgId = new Date().getTime();
@@ -59,9 +77,15 @@ const TeacherView = () => {
           { timestamp: Date.now() },
           token
         );
+        const { current_page } = session;
+        if (current_page) setCurrentPage(current_page);
         updateMessage(msgId, {
           state: "fulfilled",
           message: "Session started successfully",
+        });
+        socket.emit("joinSession", {
+          sessionId: sessionId,
+          role: "teacher",
         });
         setSessionData(session);
       } catch (error) {
@@ -72,6 +96,9 @@ const TeacherView = () => {
       }
     };
     fetchData();
+    return () => {
+      socket.off("joinSession");
+    };
   }, [token]);
   const handleCopy = () => {
     navigator.clipboard.writeText(sessionId);
@@ -104,12 +131,20 @@ const TeacherView = () => {
   // Go to previous/next page (wrap around)
   const goPrev = useCallback(() => {
     if (!numPages) return;
-    setCurrentPage((prev) => (prev - 1 === 0 ? numPages : prev - 1));
+    setCurrentPage((prev) => {
+      const newPage = prev - 1 === 0 ? numPages : prev - 1;
+      setPrevPage(prev);
+      return newPage;
+    });
   }, [numPages]);
 
   const goNext = useCallback(() => {
     if (!numPages) return;
-    setCurrentPage((prev) => (prev + 1 > numPages ? 1 : prev + 1));
+    setCurrentPage((prev) => {
+      const newPage = prev + 1 > numPages ? 1 : prev + 1;
+      setPrevPage(prev);
+      return newPage;
+    });
   }, [numPages]);
 
   // Keyboard navigation: ArrowLeft / ArrowRight
@@ -274,15 +309,22 @@ const TeacherView = () => {
 
             <ScrollArea className="flex-1 rounded-md">
               <div className="flex w-max gap-3 h-full">
-                {Array.from({ length: numPages }, (_, index) => (
-                  <PagePreview
-                    key={index + 1}
-                    pageNumber={index + 1}
-                    current={currentPage === index + 1}
-                    storage_path={sessionData?.slides?.storage_path}
-                    setCurrentPage={setCurrentPage}
-                  />
-                ))}
+                {Array.from({ length: numPages }, (_, index) => {
+                  const avg_attention = avgAttentionByPage.find(
+                    (page) => page.page === index + 1
+                  )?.avgAttention;
+                  return (
+                    <PagePreview
+                      key={index + 1}
+                      pageNumber={index + 1}
+                      averageAttention={avg_attention ?? undefined}
+                      current={currentPage === index + 1}
+                      storage_path={sessionData?.slides?.storage_path}
+                      setCurrentPage={setCurrentPage}
+                      setPrevPage={setPrevPage}
+                    />
+                  );
+                })}
               </div>
               <ScrollBar orientation="horizontal" />
             </ScrollArea>

@@ -6,6 +6,7 @@ const PagePreview = ({
   storage_path,
   averageAttention = undefined,
   setCurrentPage,
+  setPrevPage,
   current,
 }) => {
   return (
@@ -20,6 +21,7 @@ const PagePreview = ({
           }`}
         onClick={() => {
           setCurrentPage(pageNumber);
+          setPrevPage(pageNumber - 1 === 0 ? 1 : pageNumber - 1);
         }}
       >
         <p className="size-4 rounded-full text-sm m-1 text-neutral-10 absolute p-3 z-50 bg-black/30 flex justify-center items-center">
@@ -76,7 +78,10 @@ const PagePreview = ({
                   : "hidden"
               }`}
             >
-              {averageAttention}%
+              {averageAttention
+                ? parseFloat(averageAttention.toFixed(2))
+                : undefined}
+              %
             </p>
           </div>
         </div>

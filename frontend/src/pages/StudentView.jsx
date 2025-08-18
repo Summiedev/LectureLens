@@ -45,12 +45,20 @@ export default function StudentViewPage({ name }) {
     const fetchData = async () => {
       try {
         const { session } = await getData(`/sessions/${sessionId}`);
-        const { started_at } = session;
+        const { started_at, ended_at } = session;
         if (!started_at) {
           addMessage({
             state: "rejected",
             id: Date.now,
             message: "Session has not started yet.",
+          });
+          return;
+        }
+        if (ended_at) {
+          addMessage({
+            state: "rejected",
+            id: Date.now,
+            message: "Session has already ended.",
           });
           return;
         }

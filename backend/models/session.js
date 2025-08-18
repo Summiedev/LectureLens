@@ -31,6 +31,23 @@ export const getSessionById = async (id) => {
   return { data, error };
 };
 
+export const getAverageAttentionBySlide = async (sessionId, slideIndex) => {
+  try {
+    const { data, error } = await supabase
+      .from("attention_logs")
+      .select("avg_score:score.avg()")
+      .eq("session_id", sessionId)
+      .eq("slide_index", slideIndex)
+      .single();
+    if (error)
+      throw new Error(`Error fetching average attention: ${error.message}`);
+    return { data, error };
+  } catch (err) {
+    console.error("Error in getAverageAttentionBySlide:", err.message);
+    return { data: null, error: err.message };
+  }
+};
+
 export const updateSession = async (id, { title, subject, date }) => {
   const { data, error } = await supabase
     .from("sessions")
