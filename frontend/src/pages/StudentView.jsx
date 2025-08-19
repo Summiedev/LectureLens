@@ -13,7 +13,6 @@ import { io } from "socket.io-client";
 
 const formatSessionDate = (dateObj) => {
   if (!dateObj) return "No date";
-
   try {
     const date = new Date(dateObj);
     return format(date, "MMMM dd, yyyy | hh:mm aa");
@@ -22,25 +21,24 @@ const formatSessionDate = (dateObj) => {
   }
 };
 
+const height = window.innerHeight * 0.64;
 const socket = io("http://localhost:5000");
 
 export default function StudentViewPage({ name }) {
   const { token } = useAuthContext();
   const navigate = useNavigate();
   const { loading, getData } = useGet();
-  const { loading: postLoading, error: postError, postData } = usePost();
+  const { postData } = usePost();
   const [showTrackerUI, setShowTrackerUI] = useState(true);
-  const [numPages, setNumpages] = useState(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const [participantUuid, setParticipantUuid] = useState(
     () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
   );
+  const [info, setInfo] = useState(null);
   const { addMessage } = useAppContext();
   const [sessionData, setSessionData] = useState(null);
   const { session_id: sessionId } = useParams();
-  const [height, setHeight] = useState(window.innerHeight * 0.64);
 
-  // fetch session data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -52,6 +50,7 @@ export default function StudentViewPage({ name }) {
             id: Date.now,
             message: "Session has not started yet.",
           });
+          setInfo("Session has not started yet.");
           return;
         }
         if (ended_at) {
@@ -60,6 +59,7 @@ export default function StudentViewPage({ name }) {
             id: Date.now,
             message: "Session has already ended.",
           });
+          setInfo("Session has already ended.");
           return;
         }
         setSessionData(session);
@@ -74,7 +74,6 @@ export default function StudentViewPage({ name }) {
 
   const onLoadSuccess = (pdf) => {
     const { numPages } = pdf?._pdfInfo;
-    setNumpages(numPages);
     setCurrentPage((p) => Math.min(Math.max(1, p), numPages));
   };
   // join session
@@ -92,6 +91,10 @@ export default function StudentViewPage({ name }) {
         socket.on("slideChange", ({ slideIndex }) => {
           setCurrentPage(slideIndex);
         });
+        socket.on("sessionEnded", () => {
+          socket.emit("leaveSession", { sessionId, participantUuid });
+          setInfo("Session has ended.");
+        });
       } catch (err) {
         console.error("Join session failed", err);
       }
@@ -104,12 +107,7 @@ export default function StudentViewPage({ name }) {
 
   // 2️⃣ Leave session handler
   const leaveSession = async () => {
-    if (!participantUuid) return;
-    await fetch(`/api/sessions/${sessionId}/leave`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ participantUuid }),
-    });
+    socket.emit("leaveSession", { sessionId, participantUuid });
     navigate("/");
   };
 
@@ -156,33 +154,39 @@ export default function StudentViewPage({ name }) {
           </div>
         </header>
         {/* Slide viewer */}
-        <div className="shadow-md/1 bg-neutral-30/30 rounded-sm w-full h-[80vh] md:h-[80%] overflow-hidden relative flex items-center justify-center">
-          {loading ? (
-            <Skeleton className=" w-full h-90 bg-neutral-50" />
-          ) : (
-            <Document
-              file={sessionData?.slides?.storage_path}
-              onLoadSuccess={onLoadSuccess}
-              loading={
-                <Skeleton className="flex-1 w-full h-full overflow-hidden grid place-items-center rounded-md" />
-              }
-              className="flex-1 w-full h-full overflow-hidden grid place-items-center"
-            >
-              <Page
-                pageNumber={currentPage}
-                renderAnnotationLayer={true}
-                renderTextLayer={true}
-                className="
+        <div className="shadow-md/1 bg-neutral-30/30 rounded-sm w-full min-w-[50%] min-h-50vh h-[70vh] md:min-h-[50%] overflow-hidden relative flex items-center justify-center">
+          {info && (
+            <div className="absolute inset-0  w-full h-full bg-neutral-70/40 flex items-center justify-center text-2xl capitalize text-neutral-10">
+              {info}
+            </div>
+          )}
+          {!info &&
+            (loading ? (
+              <Skeleton className=" w-full h-90 bg-neutral-50" />
+            ) : (
+              <Document
+                file={sessionData?.slides?.storage_path}
+                onLoadSuccess={onLoadSuccess}
+                loading={
+                  <Skeleton className="flex-1 w-full h-full overflow-hidden grid place-items-center rounded-md" />
+                }
+                className="flex-1 w-full h-full overflow-hidden grid place-items-center"
+              >
+                <Page
+                  pageNumber={currentPage}
+                  renderAnnotationLayer={true}
+                  renderTextLayer={true}
+                  className="
                   grid place-items-center rounded-md
                   [&_canvas]:max-w-full [&_canvas]:max-h-full
                   [&_canvas]:!w-auto [&_canvas]:!h-auto
                   [&_canvas]:object-contain [&_canvas]:block
                   [&_canvas]:m-auto
                 "
-                height={height}
-              />
-            </Document>
-          )}
+                  height={height}
+                />
+              </Document>
+            ))}
         </div>
 
         {/* Main */}
@@ -211,6 +215,7 @@ export default function StudentViewPage({ name }) {
               sessionId={sessionId}
               studentUUID={participantUuid}
               slideIndex={currentPage}
+              active={sessionData}
             />
           )}
         </div>

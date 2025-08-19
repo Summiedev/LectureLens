@@ -54,7 +54,7 @@ router.get(
   getParticipantReport
 );
 
-router.post("/:sessionId/leave", verifyToken, leaveSession);
+router.post("/:sessionId/leave", leaveSession);
 router.get("/dashboard", verifyToken, getDashboardSummary);
 
 router.post("/:sessionId/current-slide", verifyToken, updateCurrentSlide);

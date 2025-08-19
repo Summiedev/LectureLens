@@ -60,3 +60,24 @@ export const deleteSession = async (id) => {
   const { data, error } = await supabase.from("sessions").delete().eq("id", id);
   return { data, error };
 };
+
+export const leaveSession = async (sessionId, participantUuid) => {
+  const { error } = await supabase
+    .from("participants")
+    .update({ left_at: new Date() })
+    .eq("session_id", sessionId)
+    .eq("uuid", participantUuid);
+
+  if (error) return { error: error.message };
+  return { success: "Participant marked as left" };
+};
+
+export const endSession = async (sessionId) => {
+  const { error } = await supabase
+    .from("sessions")
+    .update({ ended_at: new Date() })
+    .eq("session_id", sessionId);
+
+  if (error) return { error: error.message };
+  return { success: "Session ended" };
+};

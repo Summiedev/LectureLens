@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAppContext } from "../context/state";
 import SessionHeader from "../components/sessionHeader";
 import { io } from "socket.io-client";
+import Loader from "../components/loader";
 
 const socket = io("http://localhost:5000");
 const height = window.innerHeight * 0.64;
@@ -23,7 +24,7 @@ const TeacherView = () => {
   const [numPages, setNumpages] = useState(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const [avgAttentionByPage, setAvgAttentionByPage] = useState([]);
-  // { page : 1 , avg_attention : 89}
+  const [isLoading, setIsLoading] = useState(false);
   const [prevPage, setPrevPage] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
   const [showControls, setShowControls] = useState(false);
@@ -57,8 +58,14 @@ const TeacherView = () => {
       previousSlideIndex: prevPage,
     });
 
+    socket.on("sessionEnded", () => {
+      console.log("Session ended");
+      setIsLoading(false);
+      navigate("/teacher-dashboard");
+    });
     return () => {
       socket.off("slideChange");
+      socket.off("sessionEnded");
     };
   }, [currentPage]);
 
@@ -170,7 +177,10 @@ const TeacherView = () => {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [goPrev, goNext]);
-
+  const handleEndSession = () => {
+    setIsLoading(true);
+    socket.emit("endSession", { sessionId });
+  };
   return (
     <main className="bg-neutral-30 min-h-screen  flex flex-col pb-3">
       {/* NavBar \ Header */}
@@ -183,6 +193,15 @@ const TeacherView = () => {
       />
       {/* Grid Layout */}
       <div className="grid grid-cols-1 md:grid-cols-[80%_20%] grid-rows-[65%_35%] gap-4 p-4 md:p-6 lg:p-8 min-h-[90vh] justify-center">
+        {isLoading && (
+          <div className="absolute inset-0 flex justify-center z-50 items-center w-full h-full bg-neutral-70/50">
+            <Loader
+              variant="pulse"
+              text="Ending Session..."
+              textColor="text-neutral-10"
+            />
+          </div>
+        )}
         {loading ? (
           <Skeleton />
         ) : (
@@ -267,12 +286,13 @@ const TeacherView = () => {
             <button
               type="button"
               aria-hidden={!showControls}
+              onClick={handleEndSession}
               className={`absolute bottom-1 md:bottom-3 left-1/2 -translate-x-1/2
-                w-[40%]
+                w-[40%] cursor-pointer z-50
                 inline-flex items-center justify-center
                 rounded-md bg-warning-50 text-neutral-10 font-semibold
                 md:px-4 px-2 py-1 md:py-2 ring-2 ring-warning-50/60 shadow-sm
-                transition-opacity duration-200 cursor-pointer
+                transition-opacity duration-200
                 hover:brightness-95 active:scale-95
                 ${
                   showControls ? "opacity-100" : "opacity-0 pointer-events-none"

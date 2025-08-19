@@ -5,6 +5,7 @@ const Loader = ({
   size = "md",
   color = "primary",
   text = "",
+  textColor = "text-neutral-70",
   fullScreen = false,
   className = "",
   variant = "orbit",
@@ -44,7 +45,7 @@ const Loader = ({
         <div className="flex flex-col items-center gap-6">
           <LoaderContent />
           {text && (
-            <p className="text-neutral-90 text-lg font-medium animate-fade-in-up">
+            <p className="text-neutral-10 text-lg font-medium animate-fade-in-up ">
               {text}
             </p>
           )}
@@ -58,7 +59,7 @@ const Loader = ({
       <div className="flex flex-col items-center gap-3">
         <LoaderContent />
         {text && (
-          <p className="text-neutral-70 text-sm font-medium animate-fade-in">
+          <p className={`${textColor} text-sm font-medium animate-fade-in`}>
             {text}
           </p>
         )}

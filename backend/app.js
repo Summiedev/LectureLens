@@ -5,8 +5,10 @@ import http from "http";
 import { Server as SocketIO } from "socket.io";
 import morgan from "morgan";
 import { getAverageAttentionBySlide } from "./models/session.js";
+import { leaveSession } from "./models/session.js";
 import { updateCurrentPage } from "./models/slide.js";
 dotenv.config();
+import { endSession } from "./models/session.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -20,7 +22,6 @@ app.use(express.urlencoded({ limit: "5mb", extended: true }));
 
 // Routes - Update to ES6 import
 import routes from "./routes/index.js";
-import { log } from "console";
 app.use("/api", routes);
 io.on("connection", (socket) => {
   socket.on("joinSession", ({ sessionId, role }) => {
@@ -28,6 +29,20 @@ io.on("connection", (socket) => {
     if (role === "teacher") {
       socket.join(`teacher-session-${sessionId}`);
     }
+  });
+
+  socket.on("leaveSession", async ({ sessionId, participantUuid, role }) => {
+    await leaveSession(sessionId, participantUuid);
+    socket.leave(sessionId);
+    if (role === "teacher") {
+      socket.leave(`teacher-session-${sessionId}`);
+    }
+  });
+
+  socket.on("endSession", async ({ sessionId }) => {
+    await endSession(sessionId);
+    io.to(sessionId).emit("sessionEnded");
+    socket.leave(sessionId);
   });
 
   socket.on(

@@ -7,6 +7,7 @@ import { usePost } from "../hooks/api";
 
 export default function FastFocusTracker({
   sessionId,
+  active,
   studentUUID,
   slideIndex,
 }) {
@@ -34,7 +35,7 @@ export default function FastFocusTracker({
     })();
   }, []);
   useEffect(() => {
-    if (sessionId && debug.face) {
+    if (sessionId && active && debug.face) {
       try {
         postData(`/sessions/${sessionId}/attention`, {
           participantUuid: studentUUID,
