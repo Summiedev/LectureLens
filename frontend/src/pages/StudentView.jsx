@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { Document, Page } from "react-pdf";
 import { useAppContext } from "../context/state";
 import { Skeleton } from "@/components/ui/skeleton";
-
+import Loader from "../components/loader";
 import { io } from "socket.io-client";
 
 const formatSessionDate = (dateObj) => {
@@ -31,14 +31,14 @@ export default function StudentViewPage({ name }) {
   const { postData } = usePost();
   const [showTrackerUI, setShowTrackerUI] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [participantUuid, setParticipantUuid] = useState(
-    () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-  );
+  const [participantUuid, setParticipantUuid] = useState(undefined);
   const [info, setInfo] = useState(null);
   const { addMessage } = useAppContext();
   const [sessionData, setSessionData] = useState(null);
   const { session_id: sessionId } = useParams();
+  const [isLeaving, setIsLeaving] = useState(false);
 
+  // fetch session data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -47,7 +47,7 @@ export default function StudentViewPage({ name }) {
         if (!started_at) {
           addMessage({
             state: "rejected",
-            id: Date.now,
+            id: Date.now(),
             message: "Session has not started yet.",
           });
           setInfo("Session has not started yet.");
@@ -56,7 +56,7 @@ export default function StudentViewPage({ name }) {
         if (ended_at) {
           addMessage({
             state: "rejected",
-            id: Date.now,
+            id: Date.now(),
             message: "Session has already ended.",
           });
           setInfo("Session has already ended.");
@@ -76,39 +76,68 @@ export default function StudentViewPage({ name }) {
     const { numPages } = pdf?._pdfInfo;
     setCurrentPage((p) => Math.min(Math.max(1, p), numPages));
   };
-  // join session
+  useEffect(() => {
+    const onSlideChange = ({ slideIndex }) => setCurrentPage(slideIndex);
+
+    const onSessionEnded = () => {
+      if (participantUuid) {
+        socket.emit("leaveSession", { sessionId, participantUuid });
+      }
+      setInfo("Session has ended.");
+    };
+
+    const onParticipantLeft = ({ participantUuid: participantId }) => {
+      if (participantId === participantUuid) {
+        addMessage({
+          id: Date.now(),
+          message: "Session left successfully",
+          state: "fulfilled",
+        });
+        setIsLeaving(false);
+        navigate("/");
+      }
+    };
+
+    socket.on("slideChange", onSlideChange);
+    socket.on("sessionEnded", onSessionEnded);
+    socket.on("participantLeft", onParticipantLeft);
+
+    return () => {
+      socket.off("slideChange", onSlideChange);
+      socket.off("sessionEnded", onSessionEnded);
+      socket.off("participantLeft", onParticipantLeft);
+    };
+  }, [sessionId, participantUuid, navigate, addMessage]);
+
   useEffect(() => {
     async function join() {
       try {
         const { participantUuid: uuid } = await postData("/sessions/join", {
           sessionCode: sessionId,
-          name: name,
+          name,
         });
-
         setParticipantUuid(uuid);
-
-        socket.emit("joinSession", { sessionId, role: "student" });
-        socket.on("slideChange", ({ slideIndex }) => {
-          setCurrentPage(slideIndex);
-        });
-        socket.on("sessionEnded", () => {
-          socket.emit("leaveSession", { sessionId, participantUuid });
-          setInfo("Session has ended.");
+        socket.emit("joinSession", {
+          sessionId,
+          role: "student",
+          name,
+          participantUuid: uuid,
         });
       } catch (err) {
         console.error("Join session failed", err);
       }
     }
-    join();
+    if (sessionData) join();
     return () => {
-      socket.off("slideChange");
+      socket.off("joinSession");
     };
-  }, [sessionId]);
+  }, [sessionId, sessionData, name]);
 
   // 2️⃣ Leave session handler
   const leaveSession = async () => {
-    socket.emit("leaveSession", { sessionId, participantUuid });
-    navigate("/");
+    if (!participantUuid) return;
+    setIsLeaving(true);
+    socket.emit("leaveSession", { sessionId, participantUuid, name });
   };
 
   return (
@@ -155,6 +184,15 @@ export default function StudentViewPage({ name }) {
         </header>
         {/* Slide viewer */}
         <div className="shadow-md/1 bg-neutral-30/30 rounded-sm w-full min-w-[50%] min-h-50vh h-[70vh] md:min-h-[50%] overflow-hidden relative flex items-center justify-center">
+          {isLeaving && (
+            <div className="absolute inset-0 flex justify-center z-50 items-center w-full h-full bg-neutral-70/50">
+              <Loader
+                variant="pulse"
+                text="Leaving Session..."
+                textColor="text-neutral-10"
+              />
+            </div>
+          )}
           {info && (
             <div className="absolute inset-0  w-full h-full bg-neutral-70/40 flex items-center justify-center text-2xl capitalize text-neutral-10">
               {info}
@@ -216,6 +254,7 @@ export default function StudentViewPage({ name }) {
               studentUUID={participantUuid}
               slideIndex={currentPage}
               active={sessionData}
+              socket={socket}
             />
           )}
         </div>

@@ -24,50 +24,68 @@ app.use(express.urlencoded({ limit: "5mb", extended: true }));
 import routes from "./routes/index.js";
 app.use("/api", routes);
 io.on("connection", (socket) => {
-  socket.on("joinSession", ({ sessionId, role }) => {
+  socket.on("joinSession", ({ sessionId, role, name, participantUuid }) => {
     socket.join(sessionId);
     if (role === "teacher") {
       socket.join(`teacher-session-${sessionId}`);
     }
-  });
+    socket.to(`teacher-session-${sessionId}`).emit("newParticipant", {
+      participantUuid: participantUuid,
+      name,
+      role,
+    });
 
-  socket.on("leaveSession", async ({ sessionId, participantUuid, role }) => {
-    await leaveSession(sessionId, participantUuid);
-    socket.leave(sessionId);
-    if (role === "teacher") {
-      socket.leave(`teacher-session-${sessionId}`);
-    }
-  });
-
-  socket.on("endSession", async ({ sessionId }) => {
-    await endSession(sessionId);
-    io.to(sessionId).emit("sessionEnded");
-    socket.leave(sessionId);
-  });
-
-  socket.on(
-    "slideChange",
-    async ({ sessionId, slideIndex, previousSlideIndex }) => {
-      try {
-        await updateCurrentPage(sessionId, slideIndex);
-        socket.to(sessionId).emit("slideChange", { slideIndex });
-        if (previousSlideIndex) {
-          const { data } = await getAverageAttentionBySlide(
-            sessionId,
-            previousSlideIndex
-          );
-          io.to(`teacher-session-${sessionId}`).emit("pageAverageAttention", {
-            page: previousSlideIndex,
-            avgAttention: data.avg_score ?? null,
-          });
+    socket.on(
+      "leaveSession",
+      async ({ sessionId, participantUuid, role, name }) => {
+        await leaveSession(sessionId, participantUuid);
+        io.to(sessionId).emit("participantLeft", { participantUuid, name });
+        socket.leave(sessionId);
+        if (role === "teacher") {
+          socket.leave(`teacher-session-${sessionId}`);
         }
-      } catch (e) {
-        console.error("updateCurrentPage error:", e.message);
       }
-    }
-  );
+    );
+    socket.on(
+      "attentionChange",
+      ({ participantUuid, attention, sessionId }) => {
+        io.to(`teacher-session-${sessionId}`).emit(
+          "participantAttentionChange",
+          { participantUuid, attention }
+        );
+      }
+    );
 
-  socket.on("disconnect", () => {});
+    socket.on("endSession", async ({ sessionId }) => {
+      await endSession(sessionId);
+      io.to(sessionId).emit("sessionEnded");
+      socket.leave(sessionId);
+    });
+
+    socket.on(
+      "slideChange",
+      async ({ sessionId, slideIndex, previousSlideIndex }) => {
+        try {
+          await updateCurrentPage(sessionId, slideIndex);
+          socket.to(sessionId).emit("slideChange", { slideIndex });
+          if (previousSlideIndex) {
+            const { data } = await getAverageAttentionBySlide(
+              sessionId,
+              previousSlideIndex
+            );
+            io.to(`teacher-session-${sessionId}`).emit("pageAverageAttention", {
+              page: previousSlideIndex,
+              avgAttention: data.avg_score ?? null,
+            });
+          }
+        } catch (e) {
+          console.error("updateCurrentPage error:", e.message);
+        }
+      }
+    );
+
+    socket.on("disconnect", () => {});
+  });
 });
 
 const PORT = process.env.PORT || 5000;

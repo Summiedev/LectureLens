@@ -71,7 +71,7 @@ const AppMsg = ({
   return (
     <div
       data-state={state}
-      className={`pointer-events-auto rounded-md border shadow-sm/1 px-3 py-2 flex items-center gap-2 max-w-[90vw] sm:max-w-md
+      className={`pointer-events-auto shadow-md rounded-md border shadow-sm/1 px-3 py-2 flex items-center gap-2 max-w-[90vw] sm:max-w-md
         ${colorClasses}
         transition-all duration-300 ease-out
         ${closing ? "opacity-0 translate-y-1" : "opacity-100 translate-y-0"}`}

@@ -14,6 +14,7 @@ import AuthContextProvider from "./context/auth-context";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/protected-route";
 import { useAppContext } from "./context/state";
+import { SessionJoin } from "./components/protected-route";
 
 import { pdfjs } from "react-pdf";
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -26,6 +27,7 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 function App() {
   const { messages, removeMessage } = useAppContext();
   const [name, setName] = useState("");
+  const [sessionId, setSessionId] = useState("");
   return (
     <>
       <div className="fixed top-4 right-4 z-[1000] flex flex-col gap-2 items-end">
@@ -46,13 +48,23 @@ function App() {
             <Route path="/Login" element={<LoginPage />} />
             <Route
               path="/Join"
-              element={<JoinSessionPage setName={setName} name={name} />}
+              element={
+                <JoinSessionPage
+                  setName={setName}
+                  name={name}
+                  session_id={sessionId}
+                />
+              }
             />
             <Route path="/Camera" element={<AttentionTracker />} />
             {/* <Route path="/Student" element={<ViewPage />} /> */}
             <Route
               path="/Student/:session_id"
-              element={<ViewPage name={name} />}
+              element={
+                <SessionJoin name={name} setSessionId={setSessionId}>
+                  <ViewPage name={name} />
+                </SessionJoin>
+              }
             />
             <Route
               path="/session/:session_id"

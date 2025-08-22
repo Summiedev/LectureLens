@@ -11,6 +11,7 @@ import { useAppContext } from "../context/state";
 import SessionHeader from "../components/sessionHeader";
 import { io } from "socket.io-client";
 import Loader from "../components/loader";
+import AppMsg from "../components/appMsg";
 
 const socket = io("http://localhost:5000");
 const height = window.innerHeight * 0.64;
@@ -28,6 +29,9 @@ const TeacherView = () => {
   const [prevPage, setPrevPage] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
   const [showControls, setShowControls] = useState(false);
+  const [student, setStudent] = useState([]);
+  const [joinMsg, setJoinMsg] = useState(null);
+  const scrollRef = useRef(null);
 
   const { addMessage, updateMessage } = useAppContext();
   const hideTimerRef = useRef(null);
@@ -59,13 +63,69 @@ const TeacherView = () => {
     });
 
     socket.on("sessionEnded", () => {
-      console.log("Session ended");
       setIsLoading(false);
       navigate("/teacher-dashboard");
     });
+    socket.on("newParticipant", ({ participantUuid, name }) => {
+      setStudent((prev) => {
+        const index = prev.findIndex(
+          (p) => p.participantUuid === participantUuid
+        );
+        if (index === -1)
+          return [...prev, { participantUuid, name, attention: 0 }];
+
+        const copy = prev.slice();
+        copy[index] = { participantUuid, name, attention: 0 };
+        return copy;
+      });
+      setJoinMsg({
+        message: `${name} joined the session`,
+        state: "fulfilled",
+      });
+    });
+    socket.on(
+      "participantAttentionChange",
+      ({ participantUuid, attention }) => {
+        setStudent((prev) => {
+          const index = prev.findIndex(
+            (p) => p.participantUuid === participantUuid
+          );
+          if (index === -1) return prev;
+          const copy = prev.slice();
+          copy[index] = { ...copy[index], attention };
+          return copy;
+        });
+      }
+    );
+    socket.on("participantLeft", ({ participantUuid, name }) => {
+      setStudent((prev) => {
+        const index = prev.findIndex(
+          (p) => p.participantUuid === participantUuid
+        );
+        if (index === -1) return prev;
+        const copy = prev.slice();
+        copy.splice(index, 1);
+        return copy;
+      });
+      setJoinMsg({
+        message: `${name} left the session`,
+        state: "fulfilled",
+      });
+    });
+    const raf = requestAnimationFrame(() => {
+      scrollRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
+    });
     return () => {
+      cancelAnimationFrame(raf);
       socket.off("slideChange");
       socket.off("sessionEnded");
+      socket.off("newParticipant");
+      socket.off("participantAttentionChange");
+      socket.off("participantLeft");
     };
   }, [currentPage]);
 
@@ -183,6 +243,16 @@ const TeacherView = () => {
   };
   return (
     <main className="bg-neutral-30 min-h-screen  flex flex-col pb-3">
+      {joinMsg && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex justify-center items-center px-2 py-1">
+          <AppMsg
+            message={joinMsg.message}
+            state={joinMsg.state}
+            autoHideDelay={3000}
+            onClose={() => setJoinMsg(null)}
+          />
+        </div>
+      )}
       {/* NavBar \ Header */}
       <SessionHeader
         loading={loading}
@@ -192,7 +262,7 @@ const TeacherView = () => {
         handleCopy={handleCopy}
       />
       {/* Grid Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-[80%_20%] grid-rows-[65%_35%] gap-4 p-4 md:p-6 lg:p-8 min-h-[90vh] justify-center">
+      <div className="grid grid-cols-1 md:grid-cols-[75%_25%] grid-rows-[65%_35%] gap-4 p-4 md:p-6 lg:p-8 min-h-[90vh] justify-center">
         {isLoading && (
           <div className="absolute inset-0 flex justify-center z-50 items-center w-full h-full bg-neutral-70/50">
             <Loader
@@ -304,7 +374,20 @@ const TeacherView = () => {
           </div>
         )}
 
-        <div className="bg-red-50 row-span-2 hidden shadow-sm/1 md:block rounded-md"></div>
+        <div className="bg-red-50 items-center gap-3 p-2 row-span-2 hidden shadow-sm/1  rounded-md md:flex flex-col">
+          <div className="px-4 bg-neutral-70 text-neutral-10 rounded-md w-full h-9 flex justify-center items-center py-2">
+            Students
+          </div>
+          <div className="w-full h-full flex flex-col gap-3">
+            {student.map((partcipant) => (
+              <StudentProfile
+                key={partcipant.participantUuid ?? Date.now()}
+                name={partcipant.name}
+                attention={partcipant.attention}
+              />
+            ))}
+          </div>
+        </div>
         {/* slides breakdown */}
         <div className="rounded-md shadow-sm/1 min-h-50 grid grid-cols-1 grid-rows-1 items-center">
           <div className="rounded-md shadow-sm/1 min-h-50  p-3 gap-3 relative px-14 grid grid-cols-1 grid-rows-1 items-center bg-neutral-10">
@@ -330,19 +413,25 @@ const TeacherView = () => {
             <ScrollArea className="flex-1 rounded-md">
               <div className="flex w-max gap-3 h-full">
                 {Array.from({ length: numPages }, (_, index) => {
-                  const avg_attention = avgAttentionByPage.find(
+                  const avgAttention = avgAttentionByPage.find(
                     (page) => page.page === index + 1
                   )?.avgAttention;
+
                   return (
-                    <PagePreview
+                    <div
                       key={index + 1}
-                      pageNumber={index + 1}
-                      averageAttention={avg_attention ?? undefined}
-                      current={currentPage === index + 1}
-                      storage_path={sessionData?.slides?.storage_path}
-                      setCurrentPage={setCurrentPage}
-                      setPrevPage={setPrevPage}
-                    />
+                      ref={index + 1 === currentPage ? scrollRef : null}
+                      className="shrink-0"
+                    >
+                      <PagePreview
+                        pageNumber={index + 1}
+                        averageAttention={avgAttention ?? undefined}
+                        current={currentPage === index + 1}
+                        storage_path={sessionData?.slides?.storage_path}
+                        setCurrentPage={setCurrentPage}
+                        setPrevPage={setPrevPage}
+                      />
+                    </div>
                   );
                 })}
               </div>
@@ -352,6 +441,26 @@ const TeacherView = () => {
         </div>
       </div>
     </main>
+  );
+};
+
+const StudentProfile = ({ name, attention }) => {
+  return (
+    <div className="text-sm flex items-center whitespace-nowrap gap-1 px-2 py-1 max-h-5">
+      <span className="size-6 bg-info-50 rounded-full"></span>
+      <span className="text-medium truncate">{name}</span> |
+      <span
+        className={`font-semibold text-sm px-2 py-0.5 rounded-full ${
+          attention >= 50
+            ? " text-green-700"
+            : attention >= 10
+            ? " text-yellow-700"
+            : " text-red-700"
+        }`}
+      >
+        {attention ?? 0}%
+      </span>
+    </div>
   );
 };
 

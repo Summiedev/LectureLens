@@ -4,8 +4,8 @@ import Footer from "../components/footer";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { add } from "date-fns";
-const JoinSessionPage = ({ name, setName }) => {
-  const [sessionId, setSessionId] = useState("");
+const JoinSessionPage = ({ name, setName, session_id }) => {
+  const [sessionId, setSessionId] = useState(session_id || "");
   const { addMessage, updateMessage } = useAppContext();
   const navigate = useNavigate();
   const joinSession = () => {

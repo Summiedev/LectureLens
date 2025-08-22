@@ -4,7 +4,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon app.js",
+    "dev": "node --watch app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -18,8 +18,8 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "http": "^0.0.1-security",
-    "socket.io": "^4.8.1",
     "morgan": "^1.10.1",
+    "socket.io": "^4.8.1",
     "uuid": "^11.1.0"
   }
 }

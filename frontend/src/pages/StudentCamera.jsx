@@ -10,6 +10,7 @@ export default function FastFocusTracker({
   active,
   studentUUID,
   slideIndex,
+  socket,
 }) {
   const videoRef = useRef();
   const canvasRef = useRef(document.createElement("canvas"));
@@ -43,9 +44,17 @@ export default function FastFocusTracker({
           attentionScore: debug.focus,
           timestamp: Date.now(),
         });
+        socket.emit("attentionChange", {
+          participantUuid: studentUUID,
+          sessionId,
+          attention: debug.focus,
+        });
       } catch (error) {}
     }
-  }, [debug.focus]);
+    return () => {
+      socket.off("attentionChange");
+    };
+  }, [debug.focus, socket]);
 
   // load models
   useEffect(() => {

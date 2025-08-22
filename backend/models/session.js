@@ -66,7 +66,7 @@ export const leaveSession = async (sessionId, participantUuid) => {
     .from("participants")
     .update({ left_at: new Date() })
     .eq("session_id", sessionId)
-    .eq("uuid", participantUuid);
+    .eq("id", participantUuid);
 
   if (error) return { error: error.message };
   return { success: "Participant marked as left" };
