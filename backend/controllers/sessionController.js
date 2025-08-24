@@ -71,7 +71,9 @@ export const listSessions = async (req, res) => {
 
   const { data, error } = await supabase
     .from("sessions")
-    .select("* , slides(storage_path)")
+    .select(
+      "* , slides(storage_path), participants(id, name, joined_at , left_at) , avg_attention_logs(avg_attention , slide_index)"
+    )
     .eq("teacher_id", teacherId)
     .order("created_at", { ascending: false });
 
@@ -84,7 +86,9 @@ export const getSessionByID = async (req, res) => {
 
   const { data, error } = await supabase
     .from("sessions")
-    .select("* , slides(storage_path)")
+    .select(
+      "* , slides(storage_path), participants(participantUuid : id, name, joined_at , left_at) , avg_attention_logs(avgAttention : avg_attention , page: slide_index)"
+    )
     .eq("session_id", sessionId)
     .single();
 

@@ -9,6 +9,7 @@ import { leaveSession } from "./models/session.js";
 import { updateCurrentPage } from "./models/slide.js";
 dotenv.config();
 import { endSession } from "./models/session.js";
+import { avgAttentionLogs } from "./models/session.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -77,6 +78,14 @@ io.on("connection", (socket) => {
               page: previousSlideIndex,
               avgAttention: data.avg_score ?? null,
             });
+            const avgAttention = data.avg_score ?? null;
+            if (avgAttention) {
+              await avgAttentionLogs(
+                sessionId,
+                previousSlideIndex,
+                avgAttention
+              );
+            }
           }
         } catch (e) {
           console.error("updateCurrentPage error:", e.message);

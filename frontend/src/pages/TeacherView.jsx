@@ -49,22 +49,11 @@ const TeacherView = () => {
         copy[i] = { page, avgAttention };
         return copy;
       });
-    });
-    return () => {
-      socket.off("pageAverageAttention");
-    };
-  }, []);
-
-  useEffect(() => {
-    socket.emit("slideChange", {
-      sessionId: sessionId,
-      slideIndex: currentPage,
-      previousSlideIndex: prevPage,
-    });
-
-    socket.on("sessionEnded", () => {
-      setIsLoading(false);
-      navigate("/teacher-dashboard");
+      socket.on("sessionEnded", () => {
+        console.log("Recieved Event");
+        setIsLoading(false);
+        navigate("/teacher-dashboard");
+      });
     });
     socket.on("newParticipant", ({ participantUuid, name }) => {
       setStudent((prev) => {
@@ -112,6 +101,21 @@ const TeacherView = () => {
         state: "fulfilled",
       });
     });
+    return () => {
+      socket.off("pageAverageAttention");
+      socket.off("sessionEnded");
+      socket.off("newParticipant");
+      socket.off("participantAttentionChange");
+      socket.off("participantLeft");
+    };
+  }, []);
+
+  useEffect(() => {
+    socket.emit("slideChange", {
+      sessionId: sessionId,
+      slideIndex: currentPage,
+      previousSlideIndex: prevPage,
+    });
     const raf = requestAnimationFrame(() => {
       scrollRef.current?.scrollIntoView({
         behavior: "smooth",
@@ -122,10 +126,6 @@ const TeacherView = () => {
     return () => {
       cancelAnimationFrame(raf);
       socket.off("slideChange");
-      socket.off("sessionEnded");
-      socket.off("newParticipant");
-      socket.off("participantAttentionChange");
-      socket.off("participantLeft");
     };
   }, [currentPage]);
 
@@ -133,27 +133,30 @@ const TeacherView = () => {
     const fetchData = async () => {
       const msgId = new Date().getTime();
       try {
-        addMessage({
-          id: msgId,
-          state: "loading",
-          message: "Starting session...",
-        });
         const { session } = await getData(`/sessions/${sessionId}`, token);
-        await postData(
-          `/sessions/${sessionId}/start`,
-          { timestamp: Date.now() },
-          token
-        );
+        if (!session.started_at) {
+          addMessage({
+            id: msgId,
+            state: "loading",
+            message: "Starting session...",
+          });
+          await postData(
+            `/sessions/${sessionId}/start`,
+            { timestamp: Date.now() },
+            token
+          );
+          updateMessage(msgId, {
+            state: "fulfilled",
+            message: "Session started successfully",
+          });
+        }
         const { current_page } = session;
-        if (current_page) setCurrentPage(current_page);
-        updateMessage(msgId, {
-          state: "fulfilled",
-          message: "Session started successfully",
-        });
-        socket.emit("joinSession", {
-          sessionId: sessionId,
-          role: "teacher",
-        });
+        setCurrentPage(current_page ?? 1);
+        setPrevPage(current_page - 1);
+        setAvgAttentionByPage(session?.avg_attention_logs ?? []);
+        const participants = session?.participants.filter((p) => !p.left_at);
+        setStudent(participants);
+
         setSessionData(session);
       } catch (error) {
         updateMessage(msgId, {
@@ -163,6 +166,10 @@ const TeacherView = () => {
       }
     };
     fetchData();
+    socket.emit("joinSession", {
+      sessionId: sessionId,
+      role: "teacher",
+    });
     return () => {
       socket.off("joinSession");
     };
@@ -381,7 +388,9 @@ const TeacherView = () => {
           <div className="w-full h-full flex flex-col gap-3">
             {student.map((partcipant) => (
               <StudentProfile
-                key={partcipant.participantUuid ?? Date.now()}
+                key={
+                  partcipant.participantUuid ?? `${Date.now()}-${Math.random()}`
+                }
                 name={partcipant.name}
                 attention={partcipant.attention}
               />

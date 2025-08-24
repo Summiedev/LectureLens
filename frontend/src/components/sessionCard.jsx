@@ -12,6 +12,20 @@ const formatSessionDate = (dateObj) => {
   }
 };
 const SessionCard = ({ session }) => {
+  const { started_at, ended_at, avg_attention_logs } = session;
+  const attention =
+    avg_attention_logs.length > 0
+      ? avg_attention_logs.reduce(
+          (acc, num) => acc + parseFloat(num.avg_attention),
+          0
+        ) / avg_attention_logs.length
+      : 0;
+  const avgAttention =
+    ended_at && started_at
+      ? parseInt(attention)
+      : started_at && !ended_at
+      ? "Ongoing"
+      : undefined;
   return (
     <>
       <main className="rounded-md shadow-sm/1 border min-h-65 border-neutral-30/50 w-full max-w-80 relative">
@@ -22,8 +36,8 @@ const SessionCard = ({ session }) => {
         <Document file={session?.slides?.storage_path} className="w-full h-40 ">
           <Page
             className={`w-full h-38 object-cover rounded-t-md flex justify-center items-center ${
-              session.averageAttention
-                ? session?.averageAttention > 60
+              avgAttention
+                ? avgAttention > 40
                   ? "border-green-600/50"
                   : "border-red-600/50"
                 : "border-neutral-50"
@@ -41,7 +55,7 @@ const SessionCard = ({ session }) => {
         </Document>
         <div className="flex flex-col p-2 gap-2">
           <div className="flex flex-col items-start">
-            <h3 className="text-sm font-semibold text-black">
+            <h3 className="text-sm font-semibold text-black capitalize">
               {session?.title}
             </h3>
             <p className="text-xs text-gray-500">
@@ -52,8 +66,8 @@ const SessionCard = ({ session }) => {
           <div className="flex gap-1 items-center">
             <div
               className={`size-6 rounded-sm ${
-                session.averageAttention
-                  ? session?.averageAttention > 60
+                avgAttention
+                  ? avgAttention > 40
                     ? "bg-green-600"
                     : "bg-red-600"
                   : "bg-neutral-50"
@@ -63,18 +77,14 @@ const SessionCard = ({ session }) => {
               <span className="text-neutral-70">Average attention</span>
               <p
                 className={`font-bold ${
-                  session.averageAttention
-                    ? session?.averageAttention > 60
+                  avgAttention
+                    ? avgAttention > 40
                       ? "text-green-600"
                       : "text-red-600"
                     : "text-neutral-50"
                 }`}
               >
-                {`${
-                  session?.averageAttention
-                    ? `${session?.averageAttention}%`
-                    : "Not Started"
-                }`}
+                {`${avgAttention ? `${avgAttention}%` : "Not Started"}`}
               </p>
             </div>
           </div>

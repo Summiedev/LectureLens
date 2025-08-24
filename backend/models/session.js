@@ -1,3 +1,4 @@
+import e from "express";
 import { supabase } from "../config/db.js";
 export const createSession = async ({ title, subject, teacherId, date }) => {
   const { data, error } = await supabase
@@ -29,6 +30,39 @@ export const getSessionById = async (id) => {
     console.error("Error fetching session:", error);
   }
   return { data, error };
+};
+
+export const avgAttentionLogs = async (sessionId, slideIndex, avgAttention) => {
+  try {
+    const { data: attentionLog, error: attentionLogError } = await supabase
+      .from("avg_attention_logs")
+      .select("*")
+      .eq("session_id", sessionId)
+      .eq("slide_index", slideIndex)
+      .single();
+    if (attentionLog === null || attentionLog === undefined || !attentionLog) {
+      const { data, error } = await supabase.from("avg_attention_logs").insert([
+        {
+          session_id: sessionId,
+          slide_index: slideIndex,
+          avg_attention: avgAttention,
+        },
+      ]);
+      if (error) throw error;
+      return true;
+    } else {
+      const { data, error } = await supabase
+        .from("avg_attention_logs")
+        .update({ avg_attention: avgAttention })
+        .eq("session_id", sessionId)
+        .eq("slide_index", slideIndex);
+      if (error) throw error;
+      return true;
+    }
+  } catch (error) {
+    console.error("Error in avgAttentionLogs:", error);
+    return false;
+  }
 };
 
 export const getAverageAttentionBySlide = async (sessionId, slideIndex) => {
