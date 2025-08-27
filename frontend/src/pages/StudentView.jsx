@@ -24,7 +24,7 @@ const formatSessionDate = (dateObj) => {
 const height = window.innerHeight * 0.64;
 const socket = io("http://localhost:5000");
 
-export default function StudentViewPage({ name }) {
+export default function StudentViewPage({ name, setName }) {
   const { token } = useAuthContext();
   const navigate = useNavigate();
   const { loading, getData } = useGet();
@@ -37,6 +37,11 @@ export default function StudentViewPage({ name }) {
   const [sessionData, setSessionData] = useState(null);
   const { session_id: sessionId } = useParams();
   const [isLeaving, setIsLeaving] = useState(false);
+
+  useEffect(() => {
+    const name = localStorage.getItem("studentName");
+    if (name) setName(name);
+  }, []);
 
   // fetch session data
   useEffect(() => {
@@ -131,7 +136,7 @@ export default function StudentViewPage({ name }) {
     return () => {
       socket.off("joinSession");
     };
-  }, [sessionId, sessionData, name]);
+  }, [sessionId, name]);
 
   // 2️⃣ Leave session handler
   const leaveSession = async () => {

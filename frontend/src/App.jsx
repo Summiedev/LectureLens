@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import AttentionTracker from "./pages/StudentCamera";
 import HomePage from "./pages/Homepage";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./index.css";
 import AppMsg from "./components/appMsg";
 import ViewPage from "./pages/StudentView";
@@ -27,6 +27,9 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 function App() {
   const { messages, removeMessage } = useAppContext();
   const [name, setName] = useState("");
+  useEffect(() => {
+    localStorage.setItem("studentName", name);
+  }, [name]);
   const [sessionId, setSessionId] = useState("");
   return (
     <>
@@ -62,7 +65,7 @@ function App() {
               path="/Student/:session_id"
               element={
                 <SessionJoin name={name} setSessionId={setSessionId}>
-                  <ViewPage name={name} />
+                  <ViewPage name={name} setName={setName} />
                 </SessionJoin>
               }
             />
