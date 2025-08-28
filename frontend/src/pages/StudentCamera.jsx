@@ -11,6 +11,8 @@ export default function FastFocusTracker({
   studentUUID,
   slideIndex,
   socket,
+  className,
+  setAttentionScore,
 }) {
   const videoRef = useRef();
   const canvasRef = useRef(document.createElement("canvas"));
@@ -51,6 +53,7 @@ export default function FastFocusTracker({
         });
       } catch (error) {}
     }
+    setAttentionScore(parseInt(debug.focus));
     return () => {
       socket.off("attentionChange");
     };
@@ -137,7 +140,7 @@ export default function FastFocusTracker({
   }, [blaze, detector, sessionId, studentUUID, slideIndex]);
 
   return (
-    <div className="p-2 bg-gray-100 rounded-md">
+    <div className={`p-2 bg-gray-100 rounded-md ${className}`}>
       <video
         ref={videoRef}
         className="w-48 h-36 rounded border mb-2"

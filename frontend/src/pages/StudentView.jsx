@@ -27,17 +27,19 @@ const socket = io("http://localhost:5000");
 export default function StudentViewPage({ name, setName }) {
   const { token } = useAuthContext();
   const navigate = useNavigate();
+  const { session_id: sessionId } = useParams();
   const { loading, getData } = useGet();
   const { postData } = usePost();
   const [showTrackerUI, setShowTrackerUI] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [participantUuid, setParticipantUuid] = useState(
-    localStorage.getItem("participantUuid") ?? null
+    localStorage.getItem(`participantUuid-${sessionId}`) ?? null
   );
+  const [attentionScore, setAttentionScore] = useState(0);
   const [info, setInfo] = useState(null);
   const { addMessage } = useAppContext();
   const [sessionData, setSessionData] = useState(null);
-  const { session_id: sessionId } = useParams();
+
   const [isLeaving, setIsLeaving] = useState(false);
 
   useEffect(() => {
@@ -124,7 +126,7 @@ export default function StudentViewPage({ name, setName }) {
           name,
         });
         setParticipantUuid(uuid);
-        localStorage.setItem("participantUuid", uuid);
+        localStorage.setItem(`participantUuid-${sessionId}`, uuid);
       } catch (err) {
         console.error("Join session failed", err);
       }
@@ -181,11 +183,19 @@ export default function StudentViewPage({ name, setName }) {
             <div className="text-right flex gap-2 rounded-sm px-4 py-2 bg-neutral-30/15 items-center justify-evenly h-10">
               <p className="font-medium">{name}</p>
               <span className="w-[2px] h-full border-1 bg-neutral-70"></span>
-              <span className="text-green-500 text-sm">9 points</span>
+              <span className="text-green-500 text-sm">{attentionScore}%</span>
               <span className="w-[2px] h-full border-1 bg-neutral-70"></span>
-              <p className="text-sm text-red-600 flex items-center gap-1">
-                <span className="bg-red-600 size-4 rounded-full"></span>
-                Inattentive
+              <p
+                className={`text-sm flex items-center gap-1 ${
+                  attentionScore < 10 ? "text-warning-50" : "text-green-500"
+                }`}
+              >
+                <span
+                  className={`size-4 rounded-full ${
+                    attentionScore < 10 ? "bg-warning-50" : "bg-green-500"
+                  }`}
+                ></span>
+                {attentionScore < 10 ? "Inattentive" : "Attentive"}
               </p>
             </div>
           </div>
@@ -235,7 +245,6 @@ export default function StudentViewPage({ name, setName }) {
             ))}
         </div>
 
-        {/* Main */}
         <main className="flex-1 px-4 py-2 flex flex-col items-center relative gap-2">
           <button
             onClick={leaveSession}
@@ -244,7 +253,7 @@ export default function StudentViewPage({ name, setName }) {
             Leave session
           </button>
         </main>
-        <div className="fixed bottom-4 right-4 z-50">
+        <div className={`fixed z-50 ${"bottom-7 right-4"}`}>
           <button
             onClick={() => setShowTrackerUI(!showTrackerUI)}
             className="mb-2 p-2 bg-white border rounded-full shadow hover:bg-gray-100"
@@ -256,15 +265,17 @@ export default function StudentViewPage({ name, setName }) {
               <Camera className="w-5 h-5" />
             )}
           </button>
-          {showTrackerUI && (
+          {
             <FastFocusTracker
               sessionId={sessionId}
+              className={`${showTrackerUI ? "block" : "hidden"} shadow-md`}
               studentUUID={participantUuid}
               slideIndex={currentPage}
               active={sessionData}
               socket={socket}
+              setAttentionScore={setAttentionScore}
             />
-          )}
+          }
         </div>
         <footer className="text-center py-4 text-sm text-gray-500 border-t">
           &copy; 2025 LectureLens. All rights reserved.{" "}
