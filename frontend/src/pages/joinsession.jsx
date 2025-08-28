@@ -3,10 +3,10 @@ import { useAppContext } from "../context/state";
 import Footer from "../components/footer";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { add } from "date-fns";
+
 const JoinSessionPage = ({ name, setName, session_id }) => {
   const [sessionId, setSessionId] = useState(session_id || "");
-  const { addMessage, updateMessage } = useAppContext();
+  const { addMessage } = useAppContext();
   const navigate = useNavigate();
   const joinSession = () => {
     const msgId = new Date().getTime();

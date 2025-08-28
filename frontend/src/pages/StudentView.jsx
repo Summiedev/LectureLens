@@ -31,7 +31,9 @@ export default function StudentViewPage({ name, setName }) {
   const { postData } = usePost();
   const [showTrackerUI, setShowTrackerUI] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [participantUuid, setParticipantUuid] = useState(undefined);
+  const [participantUuid, setParticipantUuid] = useState(
+    localStorage.getItem("participantUuid") ?? null
+  );
   const [info, setInfo] = useState(null);
   const { addMessage } = useAppContext();
   const [sessionData, setSessionData] = useState(null);
@@ -122,21 +124,22 @@ export default function StudentViewPage({ name, setName }) {
           name,
         });
         setParticipantUuid(uuid);
-        socket.emit("joinSession", {
-          sessionId,
-          role: "student",
-          name,
-          participantUuid: uuid,
-        });
+        localStorage.setItem("participantUuid", uuid);
       } catch (err) {
         console.error("Join session failed", err);
       }
     }
-    if (sessionData) join();
+    if (sessionData && !participantUuid) join();
+    socket.emit("joinSession", {
+      sessionId,
+      role: "student",
+      name,
+      participantUuid,
+    });
     return () => {
       socket.off("joinSession");
     };
-  }, [sessionId, name]);
+  }, [sessionId, sessionData, name, participantUuid]);
 
   // 2️⃣ Leave session handler
   const leaveSession = async () => {

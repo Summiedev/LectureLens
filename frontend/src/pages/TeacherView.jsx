@@ -50,7 +50,6 @@ const TeacherView = () => {
         return copy;
       });
       socket.on("sessionEnded", () => {
-        console.log("Recieved Event");
         setIsLoading(false);
         navigate("/teacher-dashboard");
       });

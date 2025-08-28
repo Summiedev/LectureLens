@@ -1,11 +1,11 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import AttentionTracker from "./pages/StudentCamera";
 import HomePage from "./pages/Homepage";
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import "./index.css";
 import AppMsg from "./components/appMsg";
-import ViewPage from "./pages/StudentView";
-import TeacherViewSession from "./pages/TeacherView";
+const ViewPage = lazy(() => import("./pages/StudentView"));
+const TeacherViewSession = lazy(() => import("./pages/TeacherView"));
 import Dashboard from "./pages/TeacherDashboard";
 import SignUpPage from "./pages/Sign-up";
 import LoginPage from "./pages/Login";
@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/protected-route";
 import { useAppContext } from "./context/state";
 import { SessionJoin } from "./components/protected-route";
+import Loader from "./components/loader";
 
 import { pdfjs } from "react-pdf";
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -26,7 +27,7 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 
 function App() {
   const { messages, removeMessage } = useAppContext();
-  const [name, setName] = useState("");
+  const [name, setName] = useState(localStorage.getItem("studentName") ?? "");
   useEffect(() => {
     localStorage.setItem("studentName", name);
   }, [name]);
@@ -65,7 +66,15 @@ function App() {
               path="/Student/:session_id"
               element={
                 <SessionJoin name={name} setSessionId={setSessionId}>
-                  <ViewPage name={name} setName={setName} />
+                  <Suspense
+                    fallback={
+                      <div className="min-h-screen px-2 py-2 flex justify-center items-center">
+                        <Loader text="Loading..." variant="pulse" />
+                      </div>
+                    }
+                  >
+                    <ViewPage name={name} setName={setName} />
+                  </Suspense>
                 </SessionJoin>
               }
             />
@@ -73,7 +82,15 @@ function App() {
               path="/session/:session_id"
               element={
                 <ProtectedRoute>
-                  <TeacherViewSession />
+                  <Suspense
+                    fallback={
+                      <div className="min-h-screen px-2 py-2 flex justify-center items-center">
+                        <Loader text="Loading..." variant="pulse" />
+                      </div>
+                    }
+                  >
+                    <TeacherViewSession />
+                  </Suspense>
                 </ProtectedRoute>
               }
             />
