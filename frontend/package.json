@@ -28,6 +28,7 @@
     "env": "^0.0.2",
     "http": "^0.0.1-security",
     "lucide-react": "^0.513.0",
+    "pdfjs-dist": "^5.3.31",
     "react": "^19.1.0",
     "react-datepicker": "^8.4.0",
     "react-day-picker": "^9.8.0",

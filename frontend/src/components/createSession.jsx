@@ -8,6 +8,7 @@ import { usePost } from "../hooks/api";
 import { useAuthContext } from "../context/auth-context";
 import { X } from "lucide-react";
 import { useAppContext } from "../context/state";
+import * as pdfjsLib from "pdfjs-dist";
 
 export default function CreateSessionForm() {
   const { addMessage, updateMessage } = useAppContext();
@@ -38,10 +39,12 @@ export default function CreateSessionForm() {
   };
 
   const handleFileUpload = (e) => {
+    const file = e.target.files[0];
     setSessionFormData({
       ...sessionFormData,
-      sessionFile: e.target.files[0],
+      sessionFile: file,
     });
+    extractText(file);
     if (errorMsg) setErrorMsg("");
   };
 
@@ -108,6 +111,19 @@ export default function CreateSessionForm() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const extractText = async (file) => {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let text = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const strings = content.items.map((item) => item.str).join("");
+      text.push({ page: i, text: strings });
+    }
+    console.log(text);
   };
 
   return (
