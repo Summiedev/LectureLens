@@ -96,5 +96,22 @@ io.on("connection", (socket) => {
   });
 });
 
+// const passages = [
+//   {
+//     text: "Atoms are the basic building blocks of matter. Each atom consists of a nucleus containing protons and neutrons, surrounded by electrons in orbitals. The number of protons in an atom defines its atomic number and determines the element.",
+//     pageNumber: 1,
+//   },
+//   {
+//     text: "Newton's First Law states that an object will remain at rest or move in uniform motion in a straight line unless acted upon by an external force. This is also known as the law of inertia.",
+//     pageNumber: 2,
+//   },
+//   {
+//     text: "Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water. The general equation is: 6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂.",
+//     pageNumber: 3,
+//   },
+// ];
+// import { generateQuizQuestions } from "./utils/ai.js";
+// generateQuizQuestions(passages);
+
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

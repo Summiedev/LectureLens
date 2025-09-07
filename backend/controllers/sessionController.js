@@ -208,7 +208,45 @@ export const addQuestions = async (req, res) => {
   }
 };
 
-// stopped testing here
+// { question : "String"
+// answers : [ "String" , string , string ]
+// correct_answer : "String"
+// pageNumber  :  number}
+
+const createQuiz = async (req, res) => {
+  try {
+    const { slideId } = req.params;
+    const { questions } = req.body;
+
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({ error: "Invalid questions format" });
+    }
+
+    const createdQuestions = [];
+
+    for (const q of questions) {
+      const { question, answers, correct_answer } = q;
+
+      const { data, error } = await createQuestion({
+        slideId,
+        questionText: question,
+        answers,
+        correct_answer,
+      });
+
+      if (error) {
+        throw new Error("Failed to insert question" + error.message);
+      }
+
+      createdQuestions.push(data);
+    }
+
+    res.status(201).json({ success: true, questions: createdQuestions });
+  } catch (error) {
+    console.error("Failed to insert question:", error.message);
+    res.status(500).json({ error: "Failed to create quiz" });
+  }
+};
 
 // Student joins by code + name Done
 export const joinSession = async (req, res) => {
