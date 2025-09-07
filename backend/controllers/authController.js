@@ -46,6 +46,7 @@ const register = async (req, res) => {
 
     res.status(201).json({
       token: authData.session.access_token,
+      session: authData.session,
       teacher: {
         id: teacher?.id,
         name: teacher?.name,
@@ -68,10 +69,10 @@ const login = async (req, res) => {
     });
 
     if (error) {
+      console.log(error);
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // Get teacher data from your database
     const { data: teacher, error: teacherError } = await getTeacherByEmail(
       email
     );

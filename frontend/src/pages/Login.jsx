@@ -45,8 +45,8 @@ const Login = () => {
         message: "Logging in...",
       });
       const result = await postData("/auth/login", {
-        email: formData.email,
-        password: formData.password,
+        email: formData.email.trim(),
+        password: formData.password.trim(),
       });
       const session = result?.session;
       const user = result?.teacher;

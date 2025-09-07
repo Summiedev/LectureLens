@@ -67,7 +67,7 @@ const SignUpPage = () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmitting) return; // prevent double-submit without blocking UI
+    if (isSubmitting) return;
     setFormError("");
     setIsSubmitting(true);
 
@@ -86,18 +86,15 @@ const SignUpPage = () => {
         password: formData.password,
       });
 
-      const token = result?.token;
-      const user = result?.teacher;
+      const session = result?.session;
 
-      if (!token || !user) throw new Error("Invalid response from server");
+      if (!session) throw new Error("Invalid response from server");
 
       updateMessage(msgId, {
         state: "fulfilled",
         message: "Account created! Signing you in...",
       });
-
-      // proceed with auth
-      loginHandler(user, token);
+      loginHandler(session);
     } catch (err) {
       const msg = err?.message || "Failed to create account";
       setFormError(msg);
