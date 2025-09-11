@@ -16,7 +16,9 @@ export default function CreateSessionForm() {
   const [sessionFormData, setSessionFormData] = useState({
     sessionName: "",
     sessionFile: undefined,
+    aiGen: true,
   });
+  const [text, setText] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isDragging, setIsDragging] = useState(false);
@@ -96,6 +98,29 @@ export default function CreateSessionForm() {
         message: "Session Created Successfully!",
         state: "fulfilled",
       });
+      if (sessionFormData.aiGen) {
+        try {
+          updateMessage(msgId, {
+            message: "Generating Quiz with AI...",
+            state: "loading",
+          });
+          const res = await postData(
+            `/sessions/${sessionId}/questions`,
+            { pdfText: JSON.stringify(text), aiGen: true },
+            token
+          );
+          console.log("AI Questions Generated:", res);
+          updateMessage(msgId, {
+            message: "AI Questions Generated Successfully!",
+            state: "fulfilled",
+          });
+        } catch (error) {
+          updateMessage(msgId, {
+            message: `Couldn't generate quiz with AI. Please try again later.`,
+            state: "rejected",
+          });
+        }
+      }
     } catch (err) {
       updateMessage(msgId, {
         message: `Error Creating session :${
@@ -123,7 +148,7 @@ export default function CreateSessionForm() {
       const strings = content.items.map((item) => item.str).join("");
       text.push({ page: i, text: strings });
     }
-    console.log(text);
+    setText(text);
   };
 
   return (

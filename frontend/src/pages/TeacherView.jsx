@@ -19,7 +19,7 @@ const TeacherView = () => {
   const navigate = useNavigate();
   const { token } = useAuthContext();
   const { session_id: sessionId } = useParams();
-  const { loading, error, getData } = useGet();
+  const { loading, getData } = useGet();
   const { postData } = usePost();
   const [sessionData, setSessionData] = useState(null);
   const [numPages, setNumpages] = useState(undefined);

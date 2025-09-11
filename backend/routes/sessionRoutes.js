@@ -27,11 +27,7 @@ const router = express.Router();
 // Teacher-only
 router.post("/", verifyToken, createSession);
 router.post("/slides/:sessionId", verifyToken, uploadSlides);
-router.patch(
-  "/:sessionId/slides/:slideId/questions",
-  verifyToken,
-  addQuestions
-);
+router.post("/:sessionId/questions", verifyToken, addQuestions);
 router.get("/:sessionId/analytics", verifyToken, getAnalytics);
 router.post("/:sessionId/start", verifyToken, startSession);
 router.delete("/:id", verifyToken, deleteSession);

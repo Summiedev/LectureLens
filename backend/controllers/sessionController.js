@@ -6,6 +6,7 @@ import { deleteSession as deleteSessionService } from "../models/session.js";
 import { createSlide } from "../models/slide.js";
 import { createQuestion } from "../models/question.js";
 import { deleteFileFromStorage } from "../models/session.js";
+import { generateQuizQuestions } from "../utils/ai.js";
 
 // Create a new session (teacher-only)
 export const createSession = async (req, res) => {
@@ -87,7 +88,7 @@ export const getSessionByID = async (req, res) => {
   const { data, error } = await supabase
     .from("sessions")
     .select(
-      "* , slides(storage_path), participants(participantUuid : id, name, joined_at , left_at) , avg_attention_logs(avgAttention : avg_attention , page: slide_index)"
+      "* , slides(storage_path), participants(participantUuid : id, name, joined_at , left_at) , avg_attention_logs(avgAttention : avg_attention , page: slide_index), questions(question_text, answers , correct_answer , page_number , created_at , updated_at)"
     )
     .eq("session_id", sessionId)
     .single();
@@ -169,8 +170,18 @@ export const uploadSlides = async (req, res) => {
 };
 // Add questions to a slide Leave this one
 export const addQuestions = async (req, res) => {
-  const { slideId } = req.params;
-  const { questions } = req.body;
+  const { sessionId } = req.params;
+  const { questions: manualQuestions, pdfText, aiGen } = req.body;
+  let questions;
+  if (aiGen && !manualQuestions) {
+    const aiQuestions = await generateQuizQuestions(pdfText);
+    questions = [...aiQuestions];
+  } else if (aiGen && manualQuestions.length > 0) {
+    const aiQuestions = await generateQuizQuestions(pdfText);
+    questions = [...manualQuestions, ...aiQuestions];
+  } else {
+    questions = manualQuestions;
+  }
 
   try {
     if (!Array.isArray(questions)) {
@@ -180,17 +191,18 @@ export const addQuestions = async (req, res) => {
     const created = [];
 
     for (const q of questions) {
-      const { question_text, answers, correct_answer } = q;
+      const { question, answers, correct_answer, pageNumber } = q;
 
-      if (!question_text || !answers || !correct_answer) {
-        continue; // Skip invalid entries
+      if (!question || !answers || !correct_answer || !pageNumber) {
+        continue;
       }
 
       const { data, error } = await createQuestion({
-        slideId,
-        questionText: question_text,
+        sessionId,
+        questionText: question,
         answers,
         correct_answer,
+        pageNumber: pageNumber,
       });
 
       if (error) {
@@ -205,46 +217,6 @@ export const addQuestions = async (req, res) => {
   } catch (err) {
     console.error("❌ Failed to insert questions:", err.message);
     res.status(500).json({ error: "Failed to insert questions" });
-  }
-};
-
-// { question : "String"
-// answers : [ "String" , string , string ]
-// correct_answer : "String"
-// pageNumber  :  number}
-
-const createQuiz = async (req, res) => {
-  try {
-    const { slideId } = req.params;
-    const { questions } = req.body;
-
-    if (!Array.isArray(questions) || questions.length === 0) {
-      return res.status(400).json({ error: "Invalid questions format" });
-    }
-
-    const createdQuestions = [];
-
-    for (const q of questions) {
-      const { question, answers, correct_answer } = q;
-
-      const { data, error } = await createQuestion({
-        slideId,
-        questionText: question,
-        answers,
-        correct_answer,
-      });
-
-      if (error) {
-        throw new Error("Failed to insert question" + error.message);
-      }
-
-      createdQuestions.push(data);
-    }
-
-    res.status(201).json({ success: true, questions: createdQuestions });
-  } catch (error) {
-    console.error("Failed to insert question:", error.message);
-    res.status(500).json({ error: "Failed to create quiz" });
   }
 };
 

@@ -1,19 +1,21 @@
 import { supabase } from "../config/db.js";
 
 export const createQuestion = async ({
-  slideId,
+  sessionId,
   questionText,
   answers,
   correct_answer,
+  pageNumber,
 }) => {
   const { data, error } = await supabase
     .from("questions")
     .insert([
       {
-        slide_id: slideId,
+        session_id: sessionId,
         question_text: questionText,
         answers: answers,
         correct_answer: correct_answer,
+        page_number: pageNumber,
       },
     ])
     .select()

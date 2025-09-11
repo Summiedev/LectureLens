@@ -6,6 +6,7 @@ const client = new OpenAI({
 });
 
 export const generateQuizQuestions = async (textPassages) => {
+  console.log(textPassages);
   const systemPrompt = [
     "You are an assistant that creates high-quality multiple-choice questions (MCQs) from textbook passages.",
     "Rules:",
@@ -51,6 +52,5 @@ export const generateQuizQuestions = async (textPassages) => {
       { role: "user", content: userPrompt },
     ],
   });
-
-  console.log(resp?.choices[0]?.message?.content);
+  return JSON.parse(resp.choices[0].message.content);
 };

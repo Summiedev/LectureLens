@@ -10,6 +10,7 @@ import { useAppContext } from "../context/state";
 import { Skeleton } from "@/components/ui/skeleton";
 import Loader from "../components/loader";
 import { io } from "socket.io-client";
+import QuizModal from "../components/quiz";
 
 const formatSessionDate = (dateObj) => {
   if (!dateObj) return "No date";
@@ -53,6 +54,8 @@ export default function StudentViewPage({ name, setName }) {
       try {
         const { session } = await getData(`/sessions/${sessionId}`);
         const { started_at, ended_at } = session;
+
+        console.log(session);
         if (!started_at) {
           addMessage({
             state: "rejected",
@@ -176,8 +179,8 @@ export default function StudentViewPage({ name, setName }) {
 
           <div className="flex items-center gap-4">
             <img
-              src="https://randomuser.me/api/portraits/women/1.jpg"
-              alt="Laila Oreoluwa"
+              src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT2Cv9HHIAch2TNZl6n4bpFVw5fuxDbIsrByQ&s"
+              alt="Avatar"
               className="w-10 h-10 rounded-full object-cover"
             />
             <div className="text-right flex gap-2 rounded-sm px-4 py-2 bg-neutral-30/15 items-center justify-evenly h-10">
@@ -253,6 +256,14 @@ export default function StudentViewPage({ name, setName }) {
             Leave session
           </button>
         </main>
+        <div className="fixed bottom-12 z-51 right-8">
+          <QuizModal
+            question="What is the capital of France?"
+            answers={["Berlin", "Madrid", "Paris", "Rome"]}
+            correctAnswer="Paris"
+            time={3}
+          />
+        </div>
         <div className={`fixed z-50 ${"bottom-7 right-4"}`}>
           <button
             onClick={() => setShowTrackerUI(!showTrackerUI)}
