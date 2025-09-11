@@ -22,6 +22,8 @@ export const generateQuizQuestions = async (textPassages) => {
     "  }",
     "- Questions must ONLY use facts from the passage text.",
     "- Do not use 'All of the above' or 'None of the above'.",
+    "-No more than 4 answer choices per question.",
+    "- You can use true / false",
     "- Only ONE correct answer per question.",
     "- Keep answers short!!!, concise, precise, and factual.",
     "- Return ALL results as a single JSON array. No commentary, no explanations.",
@@ -45,8 +47,8 @@ export const generateQuizQuestions = async (textPassages) => {
   ].join("\n");
 
   const resp = await client.chat.completions.create({
-    model: "mistralai/mistral-7b-instruct:free",
-    temperature: 0.2,
+    model: "deepseek/deepseek-r1-0528:free",
+    temperature: 0.5,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },

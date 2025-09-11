@@ -54,7 +54,7 @@ const QuizModal = ({
     }, 1500);
   };
 
-  const letters = ["A", "B", "C", "D", "E"];
+  const letters = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
   return (
     <div

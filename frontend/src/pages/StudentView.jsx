@@ -62,18 +62,50 @@ export default function StudentViewPage({ name, setName }) {
   const [sessionData, setSessionData] = useState(null);
   const [isLeaving, setIsLeaving] = useState(false);
 
+  // ...existing code...
   useEffect(() => {
-    if (attentionScore < 10 && sessionData?.questions) {
-      console.log("Attention low, showing quiz if available");
-      const quizzes = sessionData.questions.filter(
-        (q) => q.page_number === currentPage
-      );
-      const randomQuiz = quizzes[Math.floor(Math.random() * quizzes.length)];
-      if (randomQuiz) {
-        dispatchQuiz({ type: "SET_CURRENT_QUIZ", payload: randomQuiz });
-      }
+    if (attentionScore >= 10 || !sessionData?.questions || quizState.showQuiz)
+      return;
+
+    // Quizzes on current page
+    const quizzesOnPage = sessionData.questions.filter(
+      (q) => q.page_number === currentPage
+    );
+    if (quizzesOnPage.length === 0) return;
+
+    // Build a Set of answered IDs
+    const answeredIds = new Set(
+      quizState.answeredQuizzes.map((a) => a.questionId)
+    );
+    const unanswered = quizzesOnPage.filter(
+      (q) => !answeredIds.has(q.question_id)
+    );
+
+    // Source array: unanswered if any, else all (to allow repeats)
+    const pool = unanswered.length > 0 ? unanswered : quizzesOnPage;
+
+    let randomQuiz = pool[Math.floor(Math.random() * pool.length)];
+    if (
+      pool.length > 1 &&
+      randomQuiz.question_id === quizState.currentQuiz?.question_id
+    ) {
+      randomQuiz =
+        pool.find(
+          (q) => q.question_id !== quizState.currentQuiz?.question_id
+        ) || randomQuiz;
     }
-  }, [attentionScore, sessionData, currentPage]);
+    if (randomQuiz) {
+      dispatchQuiz({ type: "SET_CURRENT_QUIZ", payload: randomQuiz });
+    }
+  }, [
+    attentionScore,
+    sessionData,
+    currentPage,
+    quizState.showQuiz,
+    quizState.currentQuiz,
+    quizState.answeredQuizzes,
+    dispatchQuiz,
+  ]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,8 +114,6 @@ export default function StudentViewPage({ name, setName }) {
       try {
         const { session } = await getData(`/sessions/${sessionId}`);
         const { started_at, ended_at } = session;
-
-        console.log(session);
         if (!started_at) {
           addMessage({
             state: "rejected",
