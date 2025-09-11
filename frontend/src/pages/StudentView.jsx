@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useReducer } from "react";
 import FastFocusTracker from "./StudentCamera";
 import { useAuthContext } from "../context/auth-context";
 import { useGet, usePost } from "../hooks/api";
@@ -25,8 +25,28 @@ const formatSessionDate = (dateObj) => {
 const height = window.innerHeight * 0.64;
 const socket = io("http://localhost:5000");
 
+const quizReducer = (state, action) => {
+  switch (action.type) {
+    case "SET_CURRENT_QUIZ":
+      return { ...state, currentQuiz: action.payload, showQuiz: true };
+    case "ADD_ANSWERED_QUIZ":
+      return {
+        ...state,
+        answeredQuizzes: [...state.answeredQuizzes, action.payload],
+      };
+    case "HIDE_QUIZ":
+      return { ...state, showQuiz: false, currentQuiz: {} };
+    default:
+      return state;
+  }
+};
+
 export default function StudentViewPage({ name, setName }) {
-  const { token } = useAuthContext();
+  const [quizState, dispatchQuiz] = useReducer(quizReducer, {
+    showQuiz: false,
+    currentQuiz: {},
+    answeredQuizzes: [],
+  });
   const navigate = useNavigate();
   const { session_id: sessionId } = useParams();
   const { loading, getData } = useGet();
@@ -40,17 +60,25 @@ export default function StudentViewPage({ name, setName }) {
   const [info, setInfo] = useState(null);
   const { addMessage } = useAppContext();
   const [sessionData, setSessionData] = useState(null);
-
   const [isLeaving, setIsLeaving] = useState(false);
 
   useEffect(() => {
-    const name = localStorage.getItem("studentName");
-    if (name) setName(name);
-  }, []);
+    if (attentionScore < 10 && sessionData?.questions) {
+      console.log("Attention low, showing quiz if available");
+      const quizzes = sessionData.questions.filter(
+        (q) => q.page_number === currentPage
+      );
+      const randomQuiz = quizzes[Math.floor(Math.random() * quizzes.length)];
+      if (randomQuiz) {
+        dispatchQuiz({ type: "SET_CURRENT_QUIZ", payload: randomQuiz });
+      }
+    }
+  }, [attentionScore, sessionData, currentPage]);
 
-  // fetch session data
   useEffect(() => {
     const fetchData = async () => {
+      const name = localStorage.getItem("studentName");
+      if (name) setName(name);
       try {
         const { session } = await getData(`/sessions/${sessionId}`);
         const { started_at, ended_at } = session;
@@ -82,7 +110,7 @@ export default function StudentViewPage({ name, setName }) {
       }
     };
     if (sessionId) fetchData();
-  }, [token, sessionId]);
+  }, [sessionId]);
 
   const onLoadSuccess = (pdf) => {
     const { numPages } = pdf?._pdfInfo;
@@ -146,7 +174,6 @@ export default function StudentViewPage({ name, setName }) {
     };
   }, [sessionId, sessionData, name, participantUuid]);
 
-  // 2️⃣ Leave session handler
   const leaveSession = async () => {
     if (!participantUuid) return;
     setIsLeaving(true);
@@ -156,7 +183,6 @@ export default function StudentViewPage({ name, setName }) {
   return (
     <>
       <div className="min-h-screen flex flex-col p-2 md:p-4 bg-gray-100 text-gray-900 gap-3">
-        {/* Header */}
         <header className="bg-white rounded-md shadow-md/1 p-4 flex items-center justify-between">
           <div>
             {loading ? (
@@ -256,14 +282,20 @@ export default function StudentViewPage({ name, setName }) {
             Leave session
           </button>
         </main>
-        <div className="fixed bottom-12 z-51 right-8">
-          <QuizModal
-            question="What is the capital of France?"
-            answers={["Berlin", "Madrid", "Paris", "Rome"]}
-            correctAnswer="Paris"
-            time={3}
-          />
-        </div>
+        {quizState?.showQuiz && (
+          <div className="fixed w-full h-full bg-black/20 top-0 left-0 z-55">
+            <QuizModal
+              question={quizState?.currentQuiz?.question_text}
+              answers={quizState?.currentQuiz?.answers}
+              correctAnswer={quizState?.currentQuiz?.correct_answer}
+              questionId={quizState?.currentQuiz?.question_id}
+              time={15}
+              dispatchQuiz={dispatchQuiz}
+              className={"fixed bottom-12 z-51 right-8"}
+            />
+          </div>
+        )}
+
         <div className={`fixed z-50 ${"bottom-7 right-4"}`}>
           <button
             onClick={() => setShowTrackerUI(!showTrackerUI)}

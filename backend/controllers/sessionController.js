@@ -88,7 +88,7 @@ export const getSessionByID = async (req, res) => {
   const { data, error } = await supabase
     .from("sessions")
     .select(
-      "* , slides(storage_path), participants(participantUuid : id, name, joined_at , left_at) , avg_attention_logs(avgAttention : avg_attention , page: slide_index), questions(question_text, answers , correct_answer , page_number , created_at , updated_at)"
+      "* , slides(storage_path), participants(participantUuid : id, name, joined_at , left_at) , avg_attention_logs(avgAttention : avg_attention , page: slide_index), questions(question_text, answers , correct_answer , page_number , question_id , created_at , updated_at)"
     )
     .eq("session_id", sessionId)
     .single();
@@ -307,38 +307,7 @@ export const submitQuiz = async (req, res) => {
   let { error } = await supabase.from("quiz_responses").insert(respRows);
   if (error) return res.status(500).json({ error: error.message });
 
-  let { data: fp } = await supabase
-    .from("focus_points")
-    .select("points, history")
-    .match({ session_id: sessionId, participant_uuid: participantUuid })
-    .single();
-
-  if (!fp) {
-    fp = { points: 10, history: [] };
-    await supabase.from("focus_points").insert([
-      {
-        session_id: sessionId,
-        participant_uuid: participantUuid,
-        points: 10,
-        history: [],
-      },
-    ]);
-  }
-
-  const delta = responses.reduce((sum, r) => sum + (r.correct ? 1 : -1), 0);
-  const newPoints = Math.max(0, fp.points + delta);
-  const newHistory = [...fp.history, { type: "quiz", delta, ts: new Date() }];
-
-  ({ error } = await supabase
-    .from("focus_points")
-    .update({
-      points: newPoints,
-      history: newHistory,
-    })
-    .match({ session_id: sessionId, participant_uuid: participantUuid }));
-
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ updatedFocus: newPoints });
+  res.json({ success: true });
 };
 
 // Teacher analytics: heatmap + leaderboard done
