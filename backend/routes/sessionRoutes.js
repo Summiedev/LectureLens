@@ -35,7 +35,7 @@ router.delete("/:id", verifyToken, deleteSession);
 router.post("/join", joinSession);
 router.post("/:sessionId/attention", logAttention);
 router.get("/:sessionId/quiz", getQuiz);
-router.post("/:sessionId/quiz", submitQuiz);
+router.post("/:sessionId/submit-quiz", submitQuiz);
 
 router.get("/", verifyToken, listSessions);
 router.get("/:sessionId", getSessionByID);

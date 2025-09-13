@@ -292,22 +292,55 @@ export const getQuiz = async (req, res) => {
   res.json({ questions });
 };
 
-// Record quiz responses & update focus points
 export const submitQuiz = async (req, res) => {
   const { sessionId } = req.params;
   const { participantUuid, responses } = req.body;
 
-  const respRows = responses.map((r) => ({
-    session_id: sessionId,
-    participant_uuid: participantUuid,
-    question_id: r.questionId,
-    correct: r.correct,
-    ts: new Date(),
-  }));
-  let { error } = await supabase.from("quiz_responses").insert(respRows);
-  if (error) return res.status(500).json({ error: error.message });
+  try {
+    if (!participantUuid) {
+      return res.status(400).json({ error: "participantUuid is required" });
+    }
+    if (!Array.isArray(responses) || responses.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "responses must be a non-empty array" });
+    }
 
-  res.json({ success: true });
+    const now = new Date();
+    const respRows = responses.map((r, idx) => {
+      if (r == null || typeof r.questionId === "undefined" || typeof r.correct === "undefined") {
+        throw new Error(`Invalid response at index ${idx}`);
+      }
+      return {
+        session_id: sessionId,
+        participant_uuid: participantUuid,
+        question_id: r.questionId,
+        correct: !!r.correct,
+        ts: now,
+      };
+    });
+
+    const { data, error } = await supabase
+      .from("quiz_responses")
+      .insert(respRows, { returning: "representation" })
+      .select("*");
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    const total = respRows.length;
+    const correctCount = respRows.filter((r) => r.correct).length;
+
+    return res.status(201).json({
+      success: true,
+      inserted: data?.length ?? 0,
+      total,
+      correct: correctCount,
+      data,
+    });
+  } catch (err) {
+    console.error("submitQuiz error:", err);
+    return res.status(400).json({ error: err.message || "Invalid payload" });
+  }
 };
 
 // Teacher analytics: heatmap + leaderboard done

@@ -1,6 +1,5 @@
 import { useState, useEffect, useReducer } from "react";
 import FastFocusTracker from "./StudentCamera";
-import { useAuthContext } from "../context/auth-context";
 import { useGet, usePost } from "../hooks/api";
 import { Camera, EyeOff } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -62,18 +61,13 @@ export default function StudentViewPage({ name, setName }) {
   const [sessionData, setSessionData] = useState(null);
   const [isLeaving, setIsLeaving] = useState(false);
 
-  // ...existing code...
   useEffect(() => {
     if (attentionScore >= 10 || !sessionData?.questions || quizState.showQuiz)
       return;
-
-    // Quizzes on current page
     const quizzesOnPage = sessionData.questions.filter(
       (q) => q.page_number === currentPage
     );
     if (quizzesOnPage.length === 0) return;
-
-    // Build a Set of answered IDs
     const answeredIds = new Set(
       quizState.answeredQuizzes.map((a) => a.questionId)
     );
@@ -81,7 +75,6 @@ export default function StudentViewPage({ name, setName }) {
       (q) => !answeredIds.has(q.question_id)
     );
 
-    // Source array: unanswered if any, else all (to allow repeats)
     const pool = unanswered.length > 0 ? unanswered : quizzesOnPage;
 
     let randomQuiz = pool[Math.floor(Math.random() * pool.length)];
@@ -106,6 +99,10 @@ export default function StudentViewPage({ name, setName }) {
     quizState.answeredQuizzes,
     dispatchQuiz,
   ]);
+
+  useEffect(() => {
+    console.log(quizState.answeredQuizzes);
+  }, [quizState.answeredQuizzes]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -142,6 +139,21 @@ export default function StudentViewPage({ name, setName }) {
     if (sessionId) fetchData();
   }, [sessionId]);
 
+  const submitQuizzes = async (answeredQuizzes, participantUuid, sessionId) => {
+    try {
+      const res = await postData(`/sessions/${sessionId}/submit-quiz`, {
+        participantUuid,
+        responses: answeredQuizzes,
+      });
+    } catch (error) {
+      console.error(error.message);
+      addMessage({
+        id: Date.now(),
+        state: "rejected",
+        message: `Error : ${error.message}`,
+      });
+    }
+  };
   const onLoadSuccess = (pdf) => {
     const { numPages } = pdf?._pdfInfo;
     setCurrentPage((p) => Math.min(Math.max(1, p), numPages));
@@ -163,6 +175,7 @@ export default function StudentViewPage({ name, setName }) {
           message: "Session left successfully",
           state: "fulfilled",
         });
+        submitQuizzes(quizState.answeredQuizzes, participantUuid, sessionId);
         setIsLeaving(false);
         navigate("/");
       }
@@ -177,7 +190,13 @@ export default function StudentViewPage({ name, setName }) {
       socket.off("sessionEnded", onSessionEnded);
       socket.off("participantLeft", onParticipantLeft);
     };
-  }, [sessionId, participantUuid, navigate, addMessage]);
+  }, [
+    sessionId,
+    participantUuid,
+    navigate,
+    addMessage,
+    quizState.answeredQuizzes,
+  ]);
 
   useEffect(() => {
     async function join() {
