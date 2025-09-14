@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useReducer } from "react";
 import PagePreview from "../components/pagePreview";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { ChevronRight, ChevronLeft } from "lucide-react";
@@ -12,10 +12,38 @@ import SessionHeader from "../components/sessionHeader";
 import { io } from "socket.io-client";
 import Loader from "../components/loader";
 import AppMsg from "../components/appMsg";
+import PopUpModal from "../components/modal";
+
+const initialPopupState = {
+  isOpen: false,
+  message: "",
+  messageDetails: "",
+  onConfirm: () => {},
+};
+
+const popUpReducerFn = (state, action) => {
+  switch (action.type) {
+    case "ADD_MODAL":
+      return {
+        isOpen: true,
+        message: action.message ?? "",
+        messageDetails: action.messageDetails ?? "",
+        onConfirm: action.onConfirm ?? (() => {}),
+      };
+    case "CLOSE_MODAL":
+      return initialPopupState;
+    default:
+      return state;
+  }
+};
 
 const socket = io("http://localhost:5000");
 const height = window.innerHeight * 0.64;
 const TeacherView = () => {
+  const [popUpmodal, quizDispatch] = useReducer(
+    popUpReducerFn,
+    initialPopupState
+  );
   const navigate = useNavigate();
   const { token } = useAuthContext();
   const { session_id: sessionId } = useParams();
@@ -31,6 +59,7 @@ const TeacherView = () => {
   const [showControls, setShowControls] = useState(false);
   const [student, setStudent] = useState([]);
   const [joinMsg, setJoinMsg] = useState(null);
+
   const scrollRef = useRef(null);
 
   const { addMessage, updateMessage } = useAppContext();
@@ -49,11 +78,13 @@ const TeacherView = () => {
         copy[i] = { page, avgAttention };
         return copy;
       });
-      socket.on("sessionEnded", () => {
-        setIsLoading(false);
-        navigate("/teacher-dashboard");
-      });
     });
+
+    socket.on("sessionEnded", () => {
+      setIsLoading(false);
+      navigate("/teacher-dashboard");
+    });
+
     socket.on("newParticipant", ({ participantUuid, name }) => {
       setStudent((prev) => {
         const index = prev.findIndex(
@@ -61,15 +92,11 @@ const TeacherView = () => {
         );
         if (index === -1)
           return [...prev, { participantUuid, name, attention: 0 }];
-
         const copy = prev.slice();
         copy[index] = { participantUuid, name, attention: 0 };
         return copy;
       });
-      setJoinMsg({
-        message: `${name} joined the session`,
-        state: "fulfilled",
-      });
+      setJoinMsg({ message: `${name} joined the session`, state: "fulfilled" });
     });
     socket.on(
       "participantAttentionChange",
@@ -249,6 +276,14 @@ const TeacherView = () => {
   };
   return (
     <main className="bg-neutral-30 min-h-screen  flex flex-col pb-3">
+      {popUpmodal.isOpen && (
+        <PopUpModal
+          message={popUpmodal.message}
+          messageDetails={popUpmodal.messageDetails}
+          onConfirm={popUpmodal.onConfirm}
+          dispatch={quizDispatch}
+        />
+      )}
       {joinMsg && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex justify-center items-center px-2 py-1">
           <AppMsg
@@ -361,8 +396,14 @@ const TeacherView = () => {
 
             <button
               type="button"
-              aria-hidden={!showControls}
-              onClick={handleEndSession}
+              onClick={() =>
+                quizDispatch({
+                  type: "ADD_MODAL",
+                  onConfirm: handleEndSession,
+                  message: "End session?",
+                  messageDetails: "This action can't be reversed!!!",
+                })
+              }
               className={`absolute bottom-1 md:bottom-3 left-1/2 -translate-x-1/2
                 w-[40%] cursor-pointer z-50
                 inline-flex items-center justify-center

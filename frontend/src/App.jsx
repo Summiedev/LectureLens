@@ -16,6 +16,7 @@ import { ProtectedRoute } from "./components/protected-route";
 import { useAppContext } from "./context/state";
 import { SessionJoin } from "./components/protected-route";
 import Loader from "./components/loader";
+import Modal from "./components/modal";
 
 import { pdfjs } from "react-pdf";
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(

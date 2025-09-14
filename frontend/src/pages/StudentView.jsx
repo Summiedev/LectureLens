@@ -3,14 +3,14 @@ import FastFocusTracker from "./StudentCamera";
 import { useGet, usePost } from "../hooks/api";
 import { Camera, EyeOff } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
-import { format } from "date-fns";
+import { format } from "date-fns";  
 import { Document, Page } from "react-pdf";
 import { useAppContext } from "../context/state";
 import { Skeleton } from "@/components/ui/skeleton";
 import Loader from "../components/loader";
 import { io } from "socket.io-client";
 import QuizModal from "../components/quiz";
-
+import PopUpModal from "../components/modal";
 const formatSessionDate = (dateObj) => {
   if (!dateObj) return "No date";
   try {
@@ -99,10 +99,6 @@ export default function StudentViewPage({ name, setName }) {
     quizState.answeredQuizzes,
     dispatchQuiz,
   ]);
-
-  useEffect(() => {
-    console.log(quizState.answeredQuizzes);
-  }, [quizState.answeredQuizzes]);
 
   useEffect(() => {
     const fetchData = async () => {
