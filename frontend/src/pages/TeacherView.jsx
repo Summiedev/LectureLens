@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAppContext } from "../context/state";
 import SessionHeader from "../components/sessionHeader";
 import { io } from "socket.io-client";
-import Loader from "../components/loader";
+import Loader, { ButtonLoader } from "../components/loader";
 import AppMsg from "../components/appMsg";
 import PopUpModal from "../components/modal";
 
@@ -91,9 +91,13 @@ const TeacherView = () => {
           (p) => p.participantUuid === participantUuid
         );
         if (index === -1)
-          return [...prev, { participantUuid, name, attention: 0 }];
+          return [...prev, { participantUuid, name, attention: null }];
         const copy = prev.slice();
-        copy[index] = { participantUuid, name, attention: 0 };
+        copy[index] = {
+          participantUuid,
+          name,
+          attention: copy[index].attention ?? null,
+        };
         return copy;
       });
       setJoinMsg({ message: `${name} joined the session`, state: "fulfilled" });
@@ -180,7 +184,9 @@ const TeacherView = () => {
         setCurrentPage(current_page ?? 1);
         setPrevPage(current_page - 1);
         setAvgAttentionByPage(session?.avg_attention_logs ?? []);
-        const participants = session?.participants.filter((p) => !p.left_at);
+        const participants = session?.participants
+          .filter((p) => !p.left_at)
+          .map((p) => ({ ...p, attention: p.attention ?? null }));
         setStudent(participants);
 
         setSessionData(session);
@@ -294,7 +300,6 @@ const TeacherView = () => {
           />
         </div>
       )}
-      {/* NavBar \ Header */}
       <SessionHeader
         loading={loading}
         sessionData={sessionData}
@@ -507,7 +512,11 @@ const StudentProfile = ({ name, attention }) => {
             : " text-red-700"
         }`}
       >
-        {attention ?? 0}%
+        {attention == null ? (
+          <ButtonLoader variant="dots" size="sm" color="text-info-50" />
+        ) : (
+          `${attention}%`
+        )}
       </span>
     </div>
   );

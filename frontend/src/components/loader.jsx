@@ -211,11 +211,12 @@ export const ButtonLoader = ({
   size = "md",
   className = "",
   variant = "dots",
+  color = "",
 }) => {
   const Variants = {
-    dots: <ButtonDotsLoader size={size} />,
-    wave: <ButtonWaveLoader size={size} />,
-    spinner: <ButtonSpinnerLoader size={size} />,
+    dots: <ButtonDotsLoader size={size} color={color} />,
+    wave: <ButtonWaveLoader size={size} color={color} />,
+    spinner: <ButtonSpinnerLoader size={size} color={color} />,
   };
 
   return (
@@ -225,7 +226,7 @@ export const ButtonLoader = ({
   );
 };
 
-const ButtonDotsLoader = ({ size }) => {
+const ButtonDotsLoader = ({ size, color }) => {
   const dotSizes = {
     sm: "w-1 h-1",
     md: "w-1.5 h-1.5",
@@ -233,11 +234,11 @@ const ButtonDotsLoader = ({ size }) => {
   };
 
   return (
-    <div className="flex items-center space-x-1">
+    <div className={`flex items-center space-x-1 ${color}`}>
       {[0, 1, 2].map((i) => (
         <div
           key={i}
-          className={`${dotSizes[size]} bg-white rounded-full animate-button-dots`}
+          className={`${dotSizes[size]} bg-current rounded-full animate-button-dots`}
           style={{ animationDelay: `${i * 0.15}s` }}
         />
       ))}
@@ -245,7 +246,7 @@ const ButtonDotsLoader = ({ size }) => {
   );
 };
 
-const ButtonWaveLoader = ({ size }) => {
+const ButtonWaveLoader = ({ size, color }) => {
   const barSizes = {
     sm: "w-0.5 h-3",
     md: "w-0.5 h-4",
@@ -253,11 +254,11 @@ const ButtonWaveLoader = ({ size }) => {
   };
 
   return (
-    <div className="flex items-center space-x-1">
+    <div className={`flex items-center space-x-1 ${color}`}>
       {[0, 1, 2, 3].map((i) => (
         <div
           key={i}
-          className={`${barSizes[size]} bg-white rounded-full animate-button-wave`}
+          className={`${barSizes[size]} bg-current rounded-full animate-button-wave`}
           style={{ animationDelay: `${i * 0.1}s` }}
         />
       ))}
@@ -265,7 +266,7 @@ const ButtonWaveLoader = ({ size }) => {
   );
 };
 
-const ButtonSpinnerLoader = ({ size }) => {
+const ButtonSpinnerLoader = ({ size, color }) => {
   const spinnerSizes = {
     sm: "w-3 h-3 border",
     md: "w-4 h-4 border-2",
@@ -274,7 +275,7 @@ const ButtonSpinnerLoader = ({ size }) => {
 
   return (
     <div
-      className={`${spinnerSizes[size]} border-white/20 border-t-white rounded-full animate-sophisticated-spin`}
+      className={`${spinnerSizes[size]} border-current/30 border-t-current rounded-full animate-sophisticated-spin ${color}`}
     />
   );
 };
@@ -293,8 +294,6 @@ export const CardSkeleton = ({ className = "" }) => {
           <div className="h-3 bg-neutral-30 rounded-lg w-5/6 shimmer-bg" />
         </div>
       </div>
-
-      {/* Shimmer overlay */}
       <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent" />
     </div>
   );

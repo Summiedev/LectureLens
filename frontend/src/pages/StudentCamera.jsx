@@ -4,6 +4,7 @@ import * as tf from "@tensorflow/tfjs-core";
 import * as blazeface from "@tensorflow-models/blazeface";
 import * as fld from "@tensorflow-models/face-landmarks-detection";
 import { usePost } from "../hooks/api";
+import { useAppContext } from "../context/state";
 
 export default function FastFocusTracker({
   sessionId,
@@ -15,6 +16,7 @@ export default function FastFocusTracker({
   setAttentionScore,
 }) {
   const videoRef = useRef();
+  const { addMessage } = useAppContext();
   const canvasRef = useRef(document.createElement("canvas"));
   const [blaze, setBlaze] = useState();
   const [detector, setDetector] = useState();
@@ -51,7 +53,13 @@ export default function FastFocusTracker({
           sessionId,
           attention: debug.focus,
         });
-      } catch (error) {}
+      } catch (error) {
+        addMessage({
+          id: Date.now(),
+          message: `Error : ${error.message}`,
+          state: "rejected",
+        });
+      }
     }
     setAttentionScore(parseInt(debug.focus));
     return () => {

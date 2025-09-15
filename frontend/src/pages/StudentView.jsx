@@ -3,7 +3,7 @@ import FastFocusTracker from "./StudentCamera";
 import { useGet, usePost } from "../hooks/api";
 import { Camera, EyeOff } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
-import { format } from "date-fns";  
+import { format } from "date-fns";
 import { Document, Page } from "react-pdf";
 import { useAppContext } from "../context/state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,12 +40,39 @@ const quizReducer = (state, action) => {
   }
 };
 
+const initialPopupState = {
+  isOpen: false,
+  message: "",
+  messageDetails: "",
+  onConfirm: () => {},
+};
+
+const popUpReducerFn = (state, action) => {
+  switch (action.type) {
+    case "ADD_MODAL":
+      return {
+        isOpen: true,
+        message: action.message ?? "",
+        messageDetails: action.messageDetails ?? "",
+        onConfirm: action.onConfirm ?? (() => {}),
+      };
+    case "CLOSE_MODAL":
+      return initialPopupState;
+    default:
+      return state;
+  }
+};
+
 export default function StudentViewPage({ name, setName }) {
   const [quizState, dispatchQuiz] = useReducer(quizReducer, {
     showQuiz: false,
     currentQuiz: {},
     answeredQuizzes: [],
   });
+  const [popUpmodal, quizDispatch] = useReducer(
+    popUpReducerFn,
+    initialPopupState
+  );
   const navigate = useNavigate();
   const { session_id: sessionId } = useParams();
   const { loading, getData } = useGet();
@@ -55,14 +82,20 @@ export default function StudentViewPage({ name, setName }) {
   const [participantUuid, setParticipantUuid] = useState(
     localStorage.getItem(`participantUuid-${sessionId}`) ?? null
   );
-  const [attentionScore, setAttentionScore] = useState(0);
+  const [attentionScore, setAttentionScore] = useState(null);
   const [info, setInfo] = useState(null);
   const { addMessage } = useAppContext();
   const [sessionData, setSessionData] = useState(null);
   const [isLeaving, setIsLeaving] = useState(false);
 
   useEffect(() => {
-    if (attentionScore >= 10 || !sessionData?.questions || quizState.showQuiz)
+    if (
+      attentionScore >= 10 ||
+      attentionScore === null ||
+      attentionScore === undefined ||
+      !sessionData?.questions ||
+      quizState.showQuiz
+    )
       return;
     const quizzesOnPage = sessionData.questions.filter(
       (q) => q.page_number === currentPage
@@ -133,6 +166,9 @@ export default function StudentViewPage({ name, setName }) {
       }
     };
     if (sessionId) fetchData();
+    return () => {
+      // localStorage.removeItem(`participantUuid-${sessionId}`);
+    };
   }, [sessionId]);
 
   const submitQuizzes = async (answeredQuizzes, participantUuid, sessionId) => {
@@ -171,7 +207,10 @@ export default function StudentViewPage({ name, setName }) {
           message: "Session left successfully",
           state: "fulfilled",
         });
-        submitQuizzes(quizState.answeredQuizzes, participantUuid, sessionId);
+        if (quizState.answeredQuizzes.length) {
+          submitQuizzes(quizState.answeredQuizzes, participantUuid, sessionId);
+        }
+
         setIsLeaving(false);
         navigate("/");
       }
@@ -227,6 +266,14 @@ export default function StudentViewPage({ name, setName }) {
 
   return (
     <>
+      {popUpmodal.isOpen && (
+        <PopUpModal
+          message={popUpmodal.message}
+          messageDetails={popUpmodal.messageDetails}
+          onConfirm={popUpmodal.onConfirm}
+          dispatch={quizDispatch}
+        />
+      )}
       <div className="min-h-screen flex flex-col p-2 md:p-4 bg-gray-100 text-gray-900 gap-3">
         <header className="bg-white rounded-md shadow-md/1 p-4 flex items-center justify-between">
           <div>
@@ -321,7 +368,14 @@ export default function StudentViewPage({ name, setName }) {
 
         <main className="flex-1 px-4 py-2 flex flex-col items-center relative gap-2">
           <button
-            onClick={leaveSession}
+            onClick={() => {
+              quizDispatch({
+                type: "ADD_MODAL",
+                onConfirm: leaveSession,
+                message: "Leave session?",
+                messageDetails: "Are you sure you want to leave the session?",
+              });
+            }}
             className="bg-warning-50 text-white w-1/2 font-semibold px-4 py-2 ring-3 ring-warning-50/50 rounded shadow hover:bg-warning-50/80 cursor-pointer  mb-6"
           >
             Leave session
