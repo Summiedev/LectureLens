@@ -3,7 +3,8 @@ import react from "@vitejs/plugin-react";
 
 import path from "node:path";
 import { createRequire } from "node:module";
-import { defineConfig, normalizePath } from "vite";
+import { normalizePath } from "vite";
+import { defineConfig } from "vitest/config";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 
 const require = createRequire(import.meta.url);
@@ -32,5 +33,11 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  test: {
+    environment: "jsdom",
+    setupFiles: "./src/setupTests.ts",
+    globals: true,
+    css: true,
   },
 });

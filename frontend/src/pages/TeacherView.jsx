@@ -464,8 +464,8 @@ const TeacherView = () => {
               </button>
             </div>
 
-            <ScrollArea className="flex-1 rounded-md">
-              <div className="flex w-max gap-3 h-full">
+            <ScrollArea className="flex-1 rounded-md pb-4">
+              <div className="flex w-max gap-3 h-full pb-1">
                 {Array.from({ length: numPages }, (_, index) => {
                   const avgAttention = avgAttentionByPage.find(
                     (page) => page.page === index + 1
