@@ -16,7 +16,7 @@ import { ProtectedRoute } from "./components/protected-route";
 import { useAppContext } from "./context/state";
 import { SessionJoin } from "./components/protected-route";
 import Loader from "./components/loader";
-import Modal from "./components/modal";
+import LoadersShowcase from "./pages/loaders";
 
 import { pdfjs } from "react-pdf";
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -51,6 +51,7 @@ function App() {
             <Route path="/" element={<HomePage />} exact />
             <Route path="/SignUp" element={<SignUpPage />} />
             <Route path="/Login" element={<LoginPage />} />
+            <Route path="/Loaders" element={<LoadersShowcase />} />
             <Route
               path="/Join"
               element={
