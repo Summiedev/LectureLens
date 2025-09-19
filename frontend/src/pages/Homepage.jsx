@@ -41,7 +41,7 @@ const HomePageContents = () => {
 
           <SessionBtn
             role="Student"
-            to={"/Join"}
+            to={"/join"}
             className="bg-primary-orange-80 ring-primary-orange-80/60 text-white hover:ring-primary-orange-80/80 transition-colors w-full"
           />
         </div>

@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 export const SessionBtn = ({ role, className, to }) => {
   return (
     <Link
-      to={to || (role === "Teacher" ? "/teacher-dashboard" : "/Join")}
+      to={to || (role === "Teacher" ? "/teacher-dashboard" : "/join")}
       role="button"
       className={`flex flex-col sm:max-w-[200px] h-[76px] justify-center rounded-lg px-5 py-2.5 transition-all duration-200 ring-4 cursor-pointer ${className}`}
     >

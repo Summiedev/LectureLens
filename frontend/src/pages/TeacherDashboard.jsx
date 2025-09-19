@@ -27,7 +27,7 @@ export default function Dashboard() {
 const DashboardPage = () => {
   const [sessions, setSessions] = useState([]);
 
-  const { loading, error, getData } = useGet();
+  const { loading, getData } = useGet();
   const { token } = useAuthContext();
 
   useEffect(() => {
