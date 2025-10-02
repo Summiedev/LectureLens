@@ -109,7 +109,6 @@ export default function CreateSessionForm() {
             { pdfText: JSON.stringify(text), aiGen: true },
             token
           );
-          console.log("AI Questions Generated:", res);
           updateMessage(msgId, {
             message: "AI Questions Generated Successfully!",
             state: "fulfilled",
@@ -270,6 +269,7 @@ export default function CreateSessionForm() {
 
         <button
           type="submit"
+          disabled={isSubmitting || loading}
           className="w-full bg-blue-600 text-white py-3 rounded-md flex justify-center items-center gap-2 hover:bg-blue-700 transition disabled:bg-blue-400 disabled:cursor-not-allowed"
         >
           <Lock className="w-4 h-4" />

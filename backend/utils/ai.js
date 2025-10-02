@@ -1,12 +1,17 @@
-import OpenAI from "openai";
-
-const client = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.AI_API_KEY,
-});
+import { huggingface } from "@ai-sdk/huggingface";
+import { generateObject, streamObject } from "ai";
+import z from "zod";
+// import dotenv from "dotenv"; dotenv.config();
+const questionSchema = z.array(
+  z.object({
+    question: z.string(),
+    answers: z.array(z.string()).min(2).max(4),
+    correct_answer: z.string(),
+    pageNumber: z.number().min(1),
+  })
+);
 
 export const generateQuizQuestions = async (textPassages) => {
-  console.log(textPassages);
   const systemPrompt = [
     "You are an assistant that creates high-quality multiple-choice questions (MCQs) from textbook passages.",
     "Rules:",
@@ -17,19 +22,17 @@ export const generateQuizQuestions = async (textPassages) => {
     "  {",
     '    "question": "clear, concise question text",',
     '    "answers": ["A", "B", "C", "D"],',
-    '    "correct_answer": "one of the answers exactly as in `answers`",',
+    '    "correct_answer": "one of the answers exactly as in `answers` not A , B but the excat string in the `answers`",',
     '    "pageNumber": <the pageNumber of the passage the question is based on>',
     "  }",
     "- Questions must ONLY use facts from the passage text.",
-    "- Do not use 'All of the above' or 'None of the above'.",
     "-No more than 4 answer choices per question.",
     "- You can use true / false",
     "- Only ONE correct answer per question.",
     "- Keep answers short!!!, concise, precise, and factual.",
     "- Return ALL results as a single JSON array. No commentary, no explanations.",
   ].join("\n");
-
-  const userPrompt = [
+  const prompt = [
     "Passages with page numbers:",
     JSON.stringify(textPassages, null, 2),
     "",
@@ -45,14 +48,15 @@ export const generateQuizQuestions = async (textPassages) => {
     "",
     "Return ONLY the JSON array, nothing else.",
   ].join("\n");
-
-  const resp = await client.chat.completions.create({
-    model: "deepseek/deepseek-r1-0528:free",
-    temperature: 0.5,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
+  const { object, partialObjectStream } = await streamObject({
+    model: huggingface("deepseek-ai/DeepSeek-V3.2-Exp"),
+    system: systemPrompt,
+    prompt: prompt,
+    schema: questionSchema,
+    mode: "json",
   });
-  return JSON.parse(resp.choices[0].message.content);
+  for await (const partial of partialObjectStream) {
+    // console.log("Partial questions:", partial);
+  }
+  return object;
 };
