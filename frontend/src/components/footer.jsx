@@ -5,7 +5,7 @@ const Footer = () => {
       <a href="#" className="underline">
         Privacy Policy
       </a>{" "}
-      &{" "}
+      &amp;{" "}
       <a href="#" className="underline">
         Terms of Service
       </a>
