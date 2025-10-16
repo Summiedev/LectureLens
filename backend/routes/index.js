@@ -1,17 +1,16 @@
-const express = require('express');
+import express from "express";
+import authRoutes from "./authRoutes.js";
+import sessionRoutes from "./sessionRoutes.js";
+
 const router = express.Router();
 
-const authRoutes = require('../routes/authRoutes');
-const sessionRoutes = require('../routes/sessionRoutes');   
+// const userRoutes = require('./userRoutes');
 
-const userRoutes = require('./userRoutes'); 
- 
+router.use("/auth", authRoutes);
+router.use("/sessions", sessionRoutes);
 
-router.use('/auth', authRoutes);
-router.use('/sessions', sessionRoutes); 
-
-router.get('/', (req, res) => {
-    res.send('API is working!');
+router.get("/", (req, res) => {
+  res.send("API is working!");
 });
 
-module.exports = router;
+export default router;

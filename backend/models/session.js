@@ -1,11 +1,117 @@
-const mongoose = require('mongoose');
+import e from "express";
+import { supabase } from "../config/db.js";
+export const createSession = async ({ title, subject, teacherId, date }) => {
+  const { data, error } = await supabase
+    .from("sessions")
+    .insert([{ title, subject, teacher_id: teacherId, date }])
+    .select();
+  return { data, error };
+};
+export async function deleteFileFromStorage(fileUrl) {
+  try {
+    const path = fileUrl.split("/sessionfiles/")[1];
+    const { error } = await supabase.storage
+      .from("sessionfiles")
+      .remove([path]);
+    if (error) {
+      console.error("Failed to delete file from storage:", error.message);
+    }
+  } catch (err) {
+    console.error("Error in deleteFileFromStorage:", err.message);
+  }
+}
+export const getSessionById = async (id) => {
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) {
+    console.error("Error fetching session:", error);
+  }
+  return { data, error };
+};
 
-const sessionSchema = new mongoose.Schema({
-  teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', required: true },
-  title: { type: String, required: true },
-  subject: { type: String, required: true },
-  date: { type: Date, default: Date.now },
-  slides: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Slide' }]
-});
+export const avgAttentionLogs = async (sessionId, slideIndex, avgAttention) => {
+  try {
+    const { data: attentionLog, error: attentionLogError } = await supabase
+      .from("avg_attention_logs")
+      .select("*")
+      .eq("session_id", sessionId)
+      .eq("slide_index", slideIndex)
+      .single();
+    if (attentionLog === null || attentionLog === undefined || !attentionLog) {
+      const { data, error } = await supabase.from("avg_attention_logs").insert([
+        {
+          session_id: sessionId,
+          slide_index: slideIndex,
+          avg_attention: avgAttention,
+        },
+      ]);
+      if (error) throw error;
+      return true;
+    } else {
+      const { data, error } = await supabase
+        .from("avg_attention_logs")
+        .update({ avg_attention: avgAttention })
+        .eq("session_id", sessionId)
+        .eq("slide_index", slideIndex);
+      if (error) throw error;
+      return true;
+    }
+  } catch (error) {
+    console.error("Error in avgAttentionLogs:", error);
+    return false;
+  }
+};
 
-module.exports = mongoose.model('Session', sessionSchema);
+export const getAverageAttentionBySlide = async (sessionId, slideIndex) => {
+  try {
+    const { data, error } = await supabase
+      .from("attention_logs")
+      .select("avg_score:score.avg()")
+      .eq("session_id", sessionId)
+      .eq("slide_index", slideIndex)
+      .single();
+    if (error)
+      throw new Error(`Error fetching average attention: ${error.message}`);
+    return { data, error };
+  } catch (err) {
+    console.error("Error in getAverageAttentionBySlide:", err.message);
+    return { data: null, error: err.message };
+  }
+};
+
+export const updateSession = async (id, { title, subject, date }) => {
+  const { data, error } = await supabase
+    .from("sessions")
+    .update({ title, subject, date })
+    .eq("id", id);
+  return { data, error };
+};
+
+export const deleteSession = async (id) => {
+  const { data, error } = await supabase.from("sessions").delete().eq("id", id);
+  return { data, error };
+};
+
+export const leaveSession = async (sessionId, participantUuid) => {
+  const { error } = await supabase
+    .from("participants")
+    .update({ left_at: new Date() })
+    .eq("session_id", sessionId)
+    .eq("id", participantUuid);
+
+  if (error) return { error: error.message };
+  return { success: "Participant marked as left" };
+};
+
+export const endSession = async (sessionId) => {
+  const { error } = await supabase
+    .from("sessions")
+    .update({ ended_at: new Date() })
+    .eq("session_id", sessionId);
+
+  if (error) return { error: error.message };
+  return { success: "Session ended" };
+};

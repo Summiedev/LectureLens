@@ -1,0 +1,523 @@
+// controllers/sessionController.js
+import { v4 as uuidv4 } from "uuid";
+import { supabase } from "../config/db.js";
+import { createSession as createSessionService } from "../models/session.js";
+import { deleteSession as deleteSessionService } from "../models/session.js";
+import { createSlide } from "../models/slide.js";
+import { createQuestion } from "../models/question.js";
+import { deleteFileFromStorage } from "../models/session.js";
+import { generateQuizQuestions } from "../utils/ai.js";
+
+// Create a new session (teacher-only)
+export const createSession = async (req, res) => {
+  const { title, subject, dateTime, fileUrl } = req.body;
+
+  try {
+    if (!title || !subject) {
+      const e = new Error("Title and subject are required");
+      e.statusCode = 400;
+      throw e;
+    }
+
+    const teacherId = req.teacher?.id;
+    if (!teacherId) {
+      const e = new Error("Unauthorized");
+      e.statusCode = 401;
+      throw e;
+    }
+
+    const { data: sessionData, error: sessionError } =
+      await createSessionService({
+        title,
+        subject,
+        date: dateTime,
+        teacherId,
+      });
+    if (sessionError)
+      throw new Error(sessionError.message || "Failed to create session");
+
+    const sessionId = sessionData?.[0]?.session_id;
+    if (!sessionId) throw new Error("Session ID missing after creation");
+
+    if (fileUrl) {
+      const { error: slideError } = await createSlide(
+        sessionId,
+        title,
+        fileUrl
+      );
+      if (slideError)
+        throw new Error(slideError.message || "Failed to create slide");
+    }
+
+    return res.status(201).json({
+      sessionId,
+      message: "Session created successfully",
+    });
+  } catch (err) {
+    // Delete uploaded file only on failure
+    if (fileUrl) {
+      await deleteFileFromStorage(fileUrl);
+    }
+
+    console.error("Create session error:", err);
+    const status = err?.statusCode || 500;
+    return res
+      .status(status)
+      .json({ error: err?.message || "Failed to create session" });
+  }
+};
+
+export const listSessions = async (req, res) => {
+  const teacherId = req.teacher.id;
+
+  const { data, error } = await supabase
+    .from("sessions")
+    .select(
+      "* , slides(storage_path), participants(id, name, joined_at , left_at) , avg_attention_logs(avg_attention , slide_index)"
+    )
+    .eq("teacher_id", teacherId)
+    .order("created_at", { ascending: false });
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ sessions: data });
+};
+
+export const getSessionByID = async (req, res) => {
+  const { sessionId } = req.params;
+
+  const { data, error } = await supabase
+    .from("sessions")
+    .select(
+      "* , slides(storage_path), participants(participantUuid : id, name, joined_at , left_at) , avg_attention_logs(avgAttention : avg_attention , page: slide_index), questions(question_text, answers , correct_answer , page_number , question_id , created_at , updated_at)"
+    )
+    .eq("session_id", sessionId)
+    .single();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ session: data });
+};
+
+// Delete session
+export const deleteSession = async (req, res) => {
+  const { id } = req.params;
+
+  const { data, error } = await deleteSessionService(id);
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+  res.status(200).json({ message: "Session deleted successfully" });
+};
+
+// Upload slide URLs
+// export const uploadSlides = async (req, res) => {
+//   const { sessionId } = req.params;
+//   const { slideUrl, title } = req.body;
+
+//   // this wont work i got the error TypeError: slideUrls.map is not a function
+//   // const rows = slideUrls.map((url) => ({
+//   //   session_id: sessionId,
+//   //   title: title,
+//   //   storage_path: url,
+//   // }));
+
+//   const { data, error } = await createSlide(sessionId, title, slideUrl);
+//   if (error) return res.status(500).json({ error: error.message });
+//   res.json({ success: true, slideData: data });
+// };
+
+export const startSession = async (req, res) => {
+  const { sessionId } = req.params;
+  const { timestamp } = req.body;
+
+  try {
+    const { error } = await supabase
+      .from("sessions")
+      .update({ started_at: new Date(timestamp) })
+      .eq("session_id", sessionId);
+    if (error) throw error;
+
+    res.status(200).json({
+      success: true,
+    });
+  } catch (err) {
+    console.error("❌ Start session failed:", err.message);
+    res.status(500).json({ error: "Start session failed" });
+  }
+};
+
+export const uploadSlides = async (req, res) => {
+  const { sessionId } = req.params;
+  const { title, pdfUrl, slideQuestions } = req.body;
+
+  try {
+    const { data, error } = await createSlide(
+      sessionId,
+      title,
+      pdfUrl,
+      slideQuestions
+    );
+    if (error) throw error;
+
+    res.status(201).json({
+      success: true,
+      slideData: data,
+    });
+  } catch (err) {
+    console.error("❌ Slide upload failed:", err.message);
+    res.status(500).json({ error: "Slide upload failed" });
+  }
+};
+// Add questions to a slide Leave this one
+export const addQuestions = async (req, res) => {
+  const { sessionId } = req.params;
+  const { questions: manualQuestions, pdfText, aiGen } = req.body;
+  let questions;
+  if (aiGen && !manualQuestions) {
+    const aiQuestions = await generateQuizQuestions(pdfText);
+    questions = [...aiQuestions];
+  } else if (aiGen && manualQuestions.length > 0) {
+    const aiQuestions = await generateQuizQuestions(pdfText);
+    questions = [...manualQuestions, ...aiQuestions];
+  } else {
+    questions = manualQuestions;
+  }
+
+  try {
+    if (!Array.isArray(questions)) {
+      return res.status(400).json({ error: "Invalid questions format" });
+    }
+
+    const created = [];
+
+    for (const q of questions) {
+      const { question, answers, correct_answer, pageNumber } = q;
+
+      if (!question || !answers || !correct_answer || !pageNumber) {
+        continue;
+      }
+
+      const { data, error } = await createQuestion({
+        sessionId,
+        questionText: question,
+        answers,
+        correct_answer,
+        pageNumber: pageNumber,
+      });
+
+      if (error) {
+        console.error("Failed to insert question:", error.message);
+        continue;
+      }
+
+      created.push(data);
+    }
+
+    res.status(201).json({ success: true, questions: created });
+  } catch (err) {
+    console.error("❌ Failed to insert questions:", err.message);
+    res.status(500).json({ error: "Failed to insert questions" });
+  }
+};
+
+// Student joins by code + name Done
+export const joinSession = async (req, res) => {
+  const { sessionCode, name } = req.body;
+
+  const { data: session, error: sessErr } = await supabase
+    .from("sessions")
+    .select("session_id")
+    .eq("session_id", sessionCode)
+    .single();
+
+  if (sessErr || !session)
+    return res.status(404).json({ error: "Session not found" });
+
+  const participant_uuid = uuidv4();
+
+  const { error } = await supabase.from("participants").insert([
+    {
+      session_id: session.session_id,
+      id: participant_uuid,
+      name,
+    },
+  ]);
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json({
+    sessionId: session.session_id,
+    participantUuid: participant_uuid,
+  });
+};
+
+// Log attention score done done
+export const logAttention = async (req, res) => {
+  const { sessionId } = req.params;
+  const { participantUuid, slideIndex, attentionScore, timestamp } = req.body;
+  const { error } = await supabase.from("attention_logs").insert([
+    {
+      session_id: sessionId,
+      participant_uuid: participantUuid,
+      slide_index: slideIndex,
+      score: attentionScore,
+      ts: new Date(timestamp),
+    },
+  ]);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({
+    success: true,
+    data: { sessionId, participantUuid, slideIndex, attentionScore, timestamp },
+  });
+};
+
+// Fetch micro-quiz for a slide
+export const getQuiz = async (req, res) => {
+  const { sessionId } = req.params;
+  const { slideIndex } = req.query;
+  const { data: slide } = await supabase
+    .from("slides")
+    .select("id")
+    .eq("session_id", sessionId)
+    .eq("slide_index", slideIndex)
+    .single();
+
+  const { data: questions } = await supabase
+    .from("questions")
+    .select("id, text, options")
+    .eq("slide_id", slide.id)
+    .limit(2)
+    .order("id", { ascending: false });
+
+  res.json({ questions });
+};
+
+export const submitQuiz = async (req, res) => {
+  const { sessionId } = req.params;
+  const { participantUuid, responses } = req.body;
+
+  try {
+    if (!participantUuid) {
+      return res.status(400).json({ error: "participantUuid is required" });
+    }
+    if (!Array.isArray(responses) || responses.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "responses must be a non-empty array" });
+    }
+
+    const now = new Date();
+    const respRows = responses.map((r, idx) => {
+      if (r == null || typeof r.questionId === "undefined" || typeof r.correct === "undefined") {
+        throw new Error(`Invalid response at index ${idx}`);
+      }
+      return {
+        session_id: sessionId,
+        participant_uuid: participantUuid,
+        question_id: r.questionId,
+        correct: !!r.correct,
+        ts: now,
+      };
+    });
+
+    const { data, error } = await supabase
+      .from("quiz_responses")
+      .insert(respRows, { returning: "representation" })
+      .select("*");
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    const total = respRows.length;
+    const correctCount = respRows.filter((r) => r.correct).length;
+
+    return res.status(201).json({
+      success: true,
+      inserted: data?.length ?? 0,
+      total,
+      correct: correctCount,
+      data,
+    });
+  } catch (err) {
+    console.error("submitQuiz error:", err);
+    return res.status(400).json({ error: err.message || "Invalid payload" });
+  }
+};
+
+// Teacher analytics: heatmap + leaderboard done
+export const getAnalytics = async (req, res) => {
+  const { sessionId } = req.params;
+
+  const { data: attentionBySlide } = await supabase.rpc(
+    "avg_attention_by_slide",
+    { sid: sessionId }
+  );
+  const { data: leaderboard } = await supabase
+    .from("focus_points")
+    .select("participant_uuid, points")
+    .eq("session_id", sessionId)
+    .order("points", { ascending: false });
+
+  res.json({ attentionBySlide, leaderboard });
+};
+
+export const getSlides = async (req, res) => {
+  const { sessionId } = req.params;
+
+  const { data, error } = await supabase
+    .from("slides")
+    .select("*")
+    .eq("session_id", sessionId)
+    .order("slide_index");
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ slides: data });
+};
+
+export const getSlideQuestions = async (req, res) => {
+  const { slideId } = req.params;
+
+  const { data, error } = await supabase
+    .from("questions")
+    .select("*")
+    .eq("slide_id", slideId);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ questions: data });
+};
+export const getParticipants = async (req, res) => {
+  const { sessionId } = req.params;
+
+  const { data, error } = await supabase
+    .from("participants")
+    .select("uuid, name, joined_at")
+    .eq("session_id", sessionId);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ participants: data });
+};
+
+export const getParticipantReport = async (req, res) => {
+  const { sessionId, uuid } = req.params;
+
+  const { data: attention, error: aErr } = await supabase
+    .from("attention_logs")
+    .select("*")
+    .eq("session_id", sessionId)
+    .eq("participant_uuid", uuid);
+
+  const { data: responses, error: qErr } = await supabase
+    .from("quiz_responses")
+    .select("*")
+    .eq("session_id", sessionId)
+    .eq("participant_uuid", uuid);
+
+  const { data: focus, error: fErr } = await supabase
+    .from("focus_points")
+    .select("points, history")
+    .match({ session_id: sessionId, participant_uuid: uuid })
+    .single();
+
+  if (aErr || qErr || fErr) {
+    return res.status(500).json({
+      error: aErr?.message || qErr?.message || fErr?.message,
+    });
+  }
+
+  res.json({
+    attention,
+    responses,
+    focus,
+  });
+};
+
+//done
+export const leaveSession = async (req, res) => {
+  const { sessionId } = req.params;
+  const { participantUuid } = req.body;
+
+  const { error } = await supabase
+    .from("participants")
+    .update({ left_at: new Date() })
+    .eq("session_id", sessionId)
+    .eq("uuid", participantUuid);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: "Participant marked as left" });
+};
+
+export const getDashboardSummary = async (req, res) => {
+  const teacherId = req.teacher?.id;
+
+  const { data: sessions, error: sErr } = await supabase
+    .from("sessions")
+    .select("session_id")
+    .eq("teacher_id", teacherId); // added filter to only get sessions for this teacher
+
+  if (sErr || !sessions) {
+    return res
+      .status(500)
+      .json({ error: sErr?.message || "Could not fetch sessions" });
+  }
+
+  const sessionIds = sessions.map((s) => s.id);
+
+  const { data: focusStats, error: fErr } = await supabase
+    .from("focus_points")
+    .select("*")
+    .in("session_id", sessionIds);
+
+  if (fErr || !focusStats) {
+    return res
+      .status(500)
+      .json({ error: fErr?.message || "Could not fetch focus stats" });
+  }
+
+  const totalSessions = sessions.length;
+  const totalStudents = focusStats.length;
+  const topPerformers = focusStats
+    .sort((a, b) => b.points - a.points)
+    .slice(0, 5);
+
+  res.json({
+    totalSessions,
+    totalStudents,
+    topPerformers,
+  });
+};
+
+export const updateCurrentSlide = async (req, res) => {
+  const { sessionId } = req.params;
+  const { slideIndex } = req.body;
+
+  const { error } = await supabase
+    .from("sessions")
+    .update({ current_slide: slideIndex })
+    .eq("id", sessionId);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+};
+export const exportSessionData = async (req, res) => {
+  const { sessionId } = req.params;
+
+  const [attn, quiz, participants] = await Promise.all([
+    supabase.from("attention_logs").select("*").eq("session_id", sessionId),
+    supabase.from("quiz_responses").select("*").eq("session_id", sessionId),
+    supabase.from("participants").select("*").eq("session_id", sessionId),
+  ]);
+
+  if (attn.error || quiz.error || participants.error) {
+    return res.status(500).json({
+      error:
+        attn.error?.message ||
+        quiz.error?.message ||
+        participants.error?.message,
+    });
+  }
+
+  res.json({
+    attention_logs: attn.data,
+    quiz_responses: quiz.data,
+    participants: participants.data,
+  });
+};
