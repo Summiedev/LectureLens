@@ -1,11 +1,29 @@
-const mongoose = require('mongoose');
+import { supabase } from "../config/db.js";
 
-const slideSchema = new mongoose.Schema({
-  sessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Session', required: true },
-  imageUrl: { type: String, required: true },
-  slideIndex: { type: Number, required: true },
-  slideText: { type: String },
-  quizzes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Quiz' }]
-});
+export const createSlide = async (sessionId, title, slideUrl) => {
+  const { data, error } = await supabase
+    .from("slides")
+    .insert({
+      session_id: sessionId,
+      title: title,
+      storage_path: slideUrl,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return { data, error };
+};
+export const updateCurrentPage = async (sessionId, slideIndex) => {
+  if (!sessionId && sessionId !== 0) throw new Error("sessionId is required");
+  if (slideIndex === undefined || slideIndex === null)
+    throw new Error("slideIndex is required");
 
-module.exports = mongoose.model('Slide', slideSchema);
+  const { data, error } = await supabase
+    .from("sessions")
+    .update({ current_page: slideIndex })
+    .eq("session_id", sessionId);
+
+  if (error) {
+    throw new Error(`Supabase update failed: ${error.message}`);
+  }
+};
